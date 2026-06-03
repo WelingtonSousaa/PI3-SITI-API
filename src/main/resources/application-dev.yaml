@@ -3,7 +3,7 @@ spring:
     name: SITI-API
 
   datasource:
-    url: jdbc:mysql://localhost:3306/siti?createDatabaseIfNotExist=true&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/sitidb
     username: root
     password: root
     driver-class-name: com.mysql.cj.jdbc.Driver

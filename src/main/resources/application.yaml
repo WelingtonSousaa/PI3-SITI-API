@@ -3,4 +3,4 @@ spring:
     name: SITI-API
 
   profiles:
-    active: test
+    active: dev

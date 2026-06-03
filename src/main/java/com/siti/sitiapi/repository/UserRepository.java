@@ -1,7 +1,42 @@
 package com.siti.sitiapi.repository;
 
 import com.siti.sitiapi.model.User;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.simple.SimpleJdbcCall;
+import org.springframework.stereotype.Repository;
 
-public interface UserRepository extends JpaRepository<User, Long> {
+import java.util.List;
+import java.util.Map;
+
+@Repository
+public class UserRepository {
+
+    private final JdbcTemplate jdbc;
+
+    public UserRepository(JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
+    }
+
+    public void create(String email, String password, String identifierDocument, String apiKey) {
+        SimpleJdbcCall call = new SimpleJdbcCall(jdbc).withProcedureName("ProcCreateUser");
+        call.execute(Map.of(
+                "p_email", email,
+                "p_password", password,
+                "p_identifier_document", identifierDocument,
+                "p_api_key", apiKey
+        ));
+    }
+
+    public User findByEmail(String email) {
+        List<User> result = jdbc.query("CALL ProcGetUserByEmail(?)", (rs, row) -> {
+            User u = new User();
+            u.setId(rs.getLong("id"));
+            u.setEmail(rs.getString("email"));
+            u.setStatus(rs.getString("status"));
+            u.setIdentifierDocument(rs.getString("identifier_document"));
+            u.setApiKey(rs.getString("api_key"));
+            return u;
+        }, email);
+        return result.isEmpty() ? null : result.get(0);
+    }
 }

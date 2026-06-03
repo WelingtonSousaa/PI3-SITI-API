@@ -1,8 +1,6 @@
 package com.siti.sitiapi;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.siti.sitiapi.model.Passenger;
-import com.siti.sitiapi.repository.PassengerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
