@@ -18,18 +18,23 @@ public class UserService {
     }
 
     public RegisterResponse register(RegisterRequest request) {
-        User existing = repository.findByEmail(request.getEmail());
-        if (existing != null) {
-            throw new RuntimeException("Email já utilizado!");
+        if (repository.existsByEmail(request.getEmail())) {
+            throw new BusinessException(
+                    new ErrorResponse(400, "Email já utilizado!", "/users/register")
+            );
         }
 
-        String apiKey = UUID.randomUUID().toString();
-        repository.create(request.getEmail(), request.getPassword(),
-                request.getIdentifierDocument(), apiKey);
+        repository.create(
+                request.getEmail(),
+                request.getPassword(),
+                request.getIdentifierDocument()
+        );
+
+        User user = repository.findByEmail(request.getEmail());
 
         RegisterResponse response = new RegisterResponse();
-        response.setEmail(request.getEmail());
-        response.setApiKey(apiKey);
+        response.setId(user.getId());
+        response.setEmail(user.getEmail());
         return response;
     }
 }

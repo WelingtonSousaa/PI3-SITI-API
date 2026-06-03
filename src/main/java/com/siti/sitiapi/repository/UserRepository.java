@@ -17,14 +17,22 @@ public class UserRepository {
         this.jdbc = jdbc;
     }
 
-    public void create(String email, String password, String identifierDocument, String apiKey) {
+    public void create(
+            String email,
+            String password,
+            String identifierDocument
+    ) {
         SimpleJdbcCall call = new SimpleJdbcCall(jdbc).withProcedureName("ProcCreateUser");
         call.execute(Map.of(
                 "p_email", email,
                 "p_password", password,
-                "p_identifier_document", identifierDocument,
-                "p_api_key", apiKey
+                "p_identifier_document", identifierDocument
         ));
+    }
+
+    public boolean existsByEmail(String email) {
+        Boolean exists = jdbc.queryForObject("CALL ProcExistUserByEmail(?)", Boolean.class, email);
+        return Boolean.TRUE.equals(exists);
     }
 
     public User findByEmail(String email) {
@@ -34,7 +42,6 @@ public class UserRepository {
             u.setEmail(rs.getString("email"));
             u.setStatus(rs.getString("status"));
             u.setIdentifierDocument(rs.getString("identifier_document"));
-            u.setApiKey(rs.getString("api_key"));
             return u;
         }, email);
         return result.isEmpty() ? null : result.get(0);
