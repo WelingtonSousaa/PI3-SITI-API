@@ -1,3 +1,8 @@
+
+-- ==============================================================================
+-- PROCEDURES
+-- ==============================================================================
+
 -- =============================================================================
 -- ProcCreateUser
 -- =============================================================================
@@ -10,25 +15,15 @@ CREATE PROCEDURE ProcCreateUser(
     IN p_identifier_document VARCHAR(50)
 )
 BEGIN
-INSERT INTO users (
-    email,
-    password,
-    status,
-    identifier_document
-)
-VALUES (
-           p_email,
-           p_password,
-           'active',
-           p_identifier_document
-       );
+INSERT INTO users (email, password, status, identifier_document)
+VALUES (p_email, p_password, 'active', p_identifier_document);
 END$$
 DELIMITER ;
+
 
 -- =============================================================================
 -- ProcGetUserByEmail
 -- =============================================================================
-
 
 DROP PROCEDURE IF EXISTS ProcGetUserByEmail;
 DELIMITER $$
@@ -44,7 +39,6 @@ DELIMITER ;
 -- =============================================================================
 -- ProcExistUserByEmail
 -- =============================================================================
-
 
 DROP PROCEDURE IF EXISTS ProcExistUserByEmail;
 DELIMITER $$
