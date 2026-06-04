@@ -23,12 +23,10 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            String token = authService.login(request.getEmail(), request.getPassword());
-            return ResponseEntity.ok(Map.of("accessKey", token));
+            Map<String, String> response = authService.login(request.getEmail(), request.getPassword());
+            return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("erro", e.getMessage()));
         }
     }
-
-
 }

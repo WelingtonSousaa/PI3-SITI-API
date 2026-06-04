@@ -1,49 +1,56 @@
 package com.siti.sitiapi.service;
 
+import com.siti.sitiapi.repository.AuthRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final AuthRepository authRepository;
     private final CacheManager cacheManager;
 
-    public String login(String email, String password) {
+    public Map<String, String> login(String email, String password) {
 
-        String sql = "SELECT COUNT(*) FROM users WHERE email = ? AND password = ?";
-        Integer result = jdbcTemplate.queryForObject(sql, Integer.class, email, password);
+        Cache cacheSession       = cacheManager.getCache("session");
+        Cache cacheUsersActivate = cacheManager.getCache("usersActivate");
+        Cache cacheAdminActivate = cacheManager.getCache("usersAdministratorActivate");
 
-        if (result != null && result > 0) {
+        Map<String, Object> user = authRepository.getUserByEmailAndPassword(email, password);
 
-            Cache cacheSession = cacheManager.getCache("session");
-            Cache cacheUsersActivate = cacheManager.getCache("usersActivate");
+        if (user == null || user.get("id") == null) {
+            throw new RuntimeException("Usuário ou senha incorretos.");
+        }
 
-            if (cacheSession != null && cacheUsersActivate != null) {
+        Long userId = ((Number) user.get("id")).longValue();
 
-                Cache.ValueWrapper oldTokenWrapper = cacheUsersActivate.get(email);
-                if (oldTokenWrapper != null) {
-                    String oldToken = (String) oldTokenWrapper.get();
-
-                    if (oldToken != null) {
-                        cacheSession.evict(oldToken);
-                    }
-                }
-
-                String accessKey = UUID.randomUUID().toString();
-                cacheSession.put(accessKey, email);
-                cacheUsersActivate.put(email, accessKey);
-
-                return accessKey;
+        if (cacheUsersActivate != null) {
+            Cache.ValueWrapper oldToken = cacheUsersActivate.get(email);
+            if (oldToken != null && cacheSession != null) {
+                cacheSession.evict((String) oldToken.get());
             }
         }
 
-        throw new RuntimeException("Usuário ou senha incorretos.");
+        String accessKey = UUID.randomUUID().toString();
+
+        if (cacheSession != null)       cacheSession.put(accessKey, email);
+        if (cacheUsersActivate != null) cacheUsersActivate.put(email, accessKey);
+
+        boolean isAdmin = authRepository.hasAdministratorById(userId);
+        System.out.println("userId: " + userId + " | isAdmin: " + isAdmin);
+
+        if (isAdmin && cacheAdminActivate != null) {
+            cacheAdminActivate.put(email, accessKey);
+            return Map.of("accessKey", accessKey, "role", "ADMIN");
+        }
+
+        return Map.of("accessKey", accessKey, "role", "USER");
     }
 
     public String getEmailByAccessKey(String accessKey) {

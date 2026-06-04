@@ -12,6 +12,6 @@ public class CacheConfig {
 
     @Bean
     public CacheManager cacheManager() {
-        return new ConcurrentMapCacheManager("session", "usersActivate");
+        return new ConcurrentMapCacheManager("session", "usersAdministratorActivate", "usersActivate");
     }
 }
