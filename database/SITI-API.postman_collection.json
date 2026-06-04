@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "91dc7a52-a68f-49db-a30e-bfbebda79266",
+    "_postman_id": "264eac1f-6875-497a-895b-07024b52a9a6",
     "name": "SITI-API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "19082455"
@@ -16,7 +16,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"email\": \"carlos@gmail.com\",\r\n  \"password\": \"123456789\",\r\n  \"identifierDocument\": \"00100200345\"\r\n}",
+              "raw": "{\r\n  \"email\": \"teste@gmail.com\",\r\n  \"password\": \"123456789\",\r\n  \"identifierDocument\": \"00100200345\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -48,7 +48,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"usuario\": \"romario\",\r\n  \"senha\": \"123\"\r\n}",
+              "raw": "{\r\n  \"email\": \"teste@gmail.com\",\r\n  \"password\": \"123456789\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -81,7 +81,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "654f8d1d-b4ce-4283-a5d9-608110ac6e79",
+                "value": "d037bf79-f1dd-410f-b6b2-beeacd7cee81",
                 "type": "text"
               }
             ],
