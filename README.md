@@ -17,26 +17,26 @@ API REST do projeto SITI, desenvolvida com Java 21, Spring Boot e MySQL. A aplic
 
 ```text
 SITI-API/
-├── database/
-│   ├── create_db.sql                  # Cria o banco e as tabelas
-│   ├── procedures.sql                  # Cria as procedures usadas pela API
-│   └── SITI-API.postman_collection.json
-├── src/main/java/com/siti/sitiapi/
-│   ├── configs/                        # CORS, cache e autenticacao por interceptor
-│   ├── controller/                     # Rotas REST
-│   ├── dto/                            # Objetos de entrada e resposta
-│   ├── exception/                      # Tratamento de erros
-│   ├── model/                          # Modelos de dominio
-│   ├── repository/                     # Acesso ao banco via JDBC/procedures
-│   └── service/                        # Regras de negocio
-├── src/main/resources/
-│   ├── application.yaml                # Perfil ativo padrao
-│   ├── application-dev.yaml            # Configuracao local
-│   └── application-prod.yaml           # Configuracao para Docker/producao
-├── Dockerfile
-├── mvnw
-├── mvnw.cmd
-└── pom.xml
++-- database/
+|   +-- create_db.sql                   # Cria o banco e as tabelas
+|   +-- procedures.sql                   # Cria as procedures usadas pela API
+|   +-- SITI-API.postman_collection.json
++-- src/main/java/com/siti/sitiapi/
+|   +-- configs/                         # CORS, cache e autenticacao por interceptor
+|   +-- controller/                      # Rotas REST
+|   +-- dto/                             # Objetos de entrada e resposta
+|   +-- exception/                       # Tratamento de erros
+|   +-- model/                           # Modelos de dominio
+|   +-- repository/                      # Acesso ao banco via JDBC/procedures
+|   +-- service/                         # Regras de negocio
++-- src/main/resources/
+|   +-- application.yaml                 # Perfil ativo padrao
+|   +-- application-dev.yaml             # Configuracao local
+|   +-- application-prod.yaml            # Configuracao para Docker/producao
++-- Dockerfile
++-- mvnw
++-- mvnw.cmd
++-- pom.xml
 ```
 
 ## Pre-requisitos
