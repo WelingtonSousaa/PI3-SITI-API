@@ -53,3 +53,36 @@ BEGIN
 SELECT EXISTS(SELECT 1 FROM users WHERE email = p_email) AS exists_user;
 END$$
 DELIMITER ;
+
+DROP PROCEDURE IF EXISTS ProcCreatePassenger;
+DELIMITER $$
+CREATE PROCEDURE ProcCreatePassenger(
+    IN p_id               BIGINT,
+    IN p_birth_date       DATE,
+    IN p_phone            VARCHAR(20),
+    IN p_type             VARCHAR(50),
+    IN p_registration_number VARCHAR(50),
+    IN p_bond_proof       VARCHAR(255),
+    IN p_id_address       BIGINT
+)
+BEGIN
+INSERT INTO passengers (
+    id,
+    birth_date,
+    phone,
+    type,
+    registration_number,
+    bond_proof,
+    id_address
+)
+VALUES (
+           p_id,
+           p_birth_date,
+           p_phone,
+           p_type,
+           p_registration_number,
+           p_bond_proof,
+           p_id_address
+       );
+END$$
+DELIMITER ;

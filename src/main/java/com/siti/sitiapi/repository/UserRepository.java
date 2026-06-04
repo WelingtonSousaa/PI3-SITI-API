@@ -35,6 +35,22 @@ public class UserRepository {
         return Boolean.TRUE.equals(exists);
     }
 
+    public User findById(Long id) {
+        List<User> result = jdbc.query(
+                "SELECT id, email, status, identifier_document FROM users WHERE id = ?",
+                (rs, row) -> {
+                    User u = new User();
+                    u.setId(rs.getLong("id"));
+                    u.setEmail(rs.getString("email"));
+                    u.setStatus(rs.getString("status"));
+                    u.setIdentifierDocument(rs.getString("identifier_document"));
+                    return u;
+                },
+                id
+        );
+        return result.isEmpty() ? null : result.get(0);
+    }
+
     public User findByEmail(String email) {
         List<User> result = jdbc.query("CALL ProcGetUserByEmail(?)", (rs, row) -> {
             User u = new User();
