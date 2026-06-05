@@ -11,7 +11,7 @@ import java.util.Map;
 
 @Repository
 @RequiredArgsConstructor
-public class AuthRepository {
+public class AuthRepository implements BaseRepository{
 
     private final JdbcTemplate jdbcTemplate;
 
