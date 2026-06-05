@@ -1,6 +1,7 @@
 package com.siti.sitiapi.repository;
 
 import com.siti.sitiapi.model.User;
+import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import org.springframework.stereotype.Repository;
@@ -9,13 +10,10 @@ import java.util.List;
 import java.util.Map;
 
 @Repository
-public class UserRepository {
+@RequiredArgsConstructor
+public class UserRepository implements BaseRepository{
 
     private final JdbcTemplate jdbc;
-
-    public UserRepository(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
-    }
 
     public void create(
             String email,

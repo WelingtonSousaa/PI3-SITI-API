@@ -1,20 +1,19 @@
 package com.siti.sitiapi.repository;
 
 import com.siti.sitiapi.model.Passenger;
+import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import org.springframework.stereotype.Repository;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Repository
-public class PassengerRepository {
+@RequiredArgsConstructor
+public class PassengerRepository implements BaseRepository {
 
     private final JdbcTemplate jdbc;
-
-    public PassengerRepository(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
-    }
 
     public void create(
             Long id,
@@ -26,15 +25,17 @@ public class PassengerRepository {
             Long idAddress
     ) {
         SimpleJdbcCall call = new SimpleJdbcCall(jdbc).withProcedureName("ProcCreatePassenger");
-        call.execute(Map.of(
-                "p_id", id,
-                "p_birth_date", birthDate,
-                "p_phone", phone,
-                "p_type", type,
-                "p_registration_number", registrationNumber,
-                "p_bond_proof", bondProof,
-                "p_id_address", idAddress
-        ));
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("p_id", id);
+        params.put("p_birth_date", birthDate);
+        params.put("p_phone", phone);
+        params.put("p_type", type);
+        params.put("p_registration_number", registrationNumber);
+        params.put("p_bond_proof", bondProof);
+        params.put("p_id_address", idAddress);
+
+        call.execute(params);
     }
 
     public boolean existsById(Long id) {
