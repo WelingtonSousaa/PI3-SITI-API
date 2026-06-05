@@ -16,7 +16,7 @@ CREATE PROCEDURE ProcCreateUser(
 )
 BEGIN
 INSERT INTO users (email, password, status, identifier_document)
-VALUES (p_email, p_password, 'active', p_identifier_document);
+VALUES (p_email, p_password, 'new', p_identifier_document);
 END$$
 DELIMITER ;
 

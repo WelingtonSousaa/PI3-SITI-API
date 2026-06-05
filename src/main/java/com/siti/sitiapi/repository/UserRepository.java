@@ -44,6 +44,6 @@ public class UserRepository {
             u.setIdentifierDocument(rs.getString("identifier_document"));
             return u;
         }, email);
-        return result.isEmpty() ? null : result.get(0);
+        return result.isEmpty() ? null : result.getFirst();
     }
 }
