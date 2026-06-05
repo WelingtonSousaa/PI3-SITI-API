@@ -15,36 +15,22 @@ public class AuthRepository {
 
     private final JdbcTemplate jdbcTemplate;
 
-    public Map<String, Object> getUserByEmailAndPassword(String email, String password) {
-        SimpleJdbcCall call = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("ProcGetUserByEmailAndPassword")
-                .returningResultSet("user", (rs, rowNum) -> Map.of(
-                        "id",    rs.getLong("id"),
-                        "email", rs.getString("email")
-                ));
-
-        Map<String, Object> result = call.execute(Map.of(
-                "p_email",    email,
-                "p_password", password
-        ));
-
-        List<Map<String, Object>> users = (List<Map<String, Object>>) result.get("user");
-
-        if (users == null || users.isEmpty()) {
-            return null;
-        }
-
-        return users.get(0);
+    public User getUserByEmailAndPassword(String email, String password) {
+        List<User> result = jdbcTemplate.query("CALL ProcGetUserByEmailAndPassword(?, ?)", (rs, row) -> {
+            User u = new User();
+            u.setId(rs.getLong("id"));
+            u.setEmail(rs.getString("email"));
+            return u;
+        }, email, password);
+        return result.isEmpty() ? null : result.get(0);
     }
 
     public boolean hasAdministratorById(Long id) {
-        SimpleJdbcCall call = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("HasUserAdministratorById")
-                .returningResultSet("result", (rs, rowNum) -> rs.getInt("result"));
-
-        Map<String, Object> output = call.execute(Map.of("p_id", id));
-
-        List<Integer> resultList = (List<Integer>) output.get("result");
-        return resultList != null && !resultList.isEmpty() && resultList.get(0) == 1;
+        List<Integer> result = jdbcTemplate.query(
+                "CALL HasUserAdministratorById(?)",
+                (rs, row) -> rs.getInt("result"),
+                id
+        );
+        return !result.isEmpty() && result.get(0) == 1;
     }
 }
