@@ -2,12 +2,9 @@ package com.siti.sitiapi.controller;
 
 import com.siti.sitiapi.dto.RegisterRequest;
 import com.siti.sitiapi.dto.RegisterResponse;
-import com.siti.sitiapi.model.User;
 import com.siti.sitiapi.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/users")
