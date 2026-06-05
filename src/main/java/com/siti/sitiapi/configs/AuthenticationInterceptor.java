@@ -22,21 +22,33 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         }
 
         String accessKey = request.getHeader("Authorization");
+        String role      = request.getHeader("Role");
 
-        if (accessKey != null) {
-            String tokenPuro = accessKey.replace("Bearer ", "").trim();
+        if (accessKey != null && role != null) {
+            String tokenPuro   = accessKey.replace("Bearer ", "").trim();
             String userActivate = authService.getEmailByAccessKey(tokenPuro);
 
             if (userActivate != null) {
+                boolean validRole = authService.validateRole(tokenPuro, role, userActivate);
+
+                if (!validRole) {
+                    deny(response, "Access denied: invalid role.");
+                    return false;
+                }
+
                 request.setAttribute("userActivate", userActivate);
+                request.setAttribute("role", role);
                 return true;
             }
         }
 
+        deny(response, "Access denied.");
+        return false;
+    }
+
+    private void deny(HttpServletResponse response, String message) throws Exception {
         response.setContentType("application/json;charset=UTF-8");
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
-        response.getWriter().write("{\"erro\": \"Acesso negado.\"}");
-
-        return false;
+        response.getWriter().write("{\"error\": \"" + message + "\"}");
     }
 }

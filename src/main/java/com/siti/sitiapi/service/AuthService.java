@@ -1,5 +1,6 @@
 package com.siti.sitiapi.service;
 
+import com.siti.sitiapi.model.User;
 import com.siti.sitiapi.repository.AuthRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.Cache;
@@ -22,34 +23,36 @@ public class AuthService {
         Cache cacheUsersActivate = cacheManager.getCache("usersActivate");
         Cache cacheAdminActivate = cacheManager.getCache("usersAdministratorActivate");
 
-        Map<String, Object> user = authRepository.getUserByEmailAndPassword(email, password);
+        User user = authRepository.getUserByEmailAndPassword(email, password);
 
-        if (user == null || user.get("id") == null) {
+        if (user == null || user.getId() == null) {
             throw new RuntimeException("Usuário ou senha incorretos.");
         }
 
-        Long userId = ((Number) user.get("id")).longValue();
+        Long userId = ((Number) user.getId()).longValue();
+        boolean isAdmin = authRepository.hasAdministratorById(userId);
 
-        if (cacheUsersActivate != null) {
-            Cache.ValueWrapper oldToken = cacheUsersActivate.get(email);
-            if (oldToken != null && cacheSession != null) {
-                cacheSession.evict((String) oldToken.get());
+        System.out.println("userId: " + userId + " | isAdmin: " + isAdmin);
+
+        // evict token antigo
+        Cache cacheAtivo = isAdmin ? cacheAdminActivate : cacheUsersActivate;
+        if (cacheAtivo != null) {
+            Cache.ValueWrapper oldToken = cacheAtivo.get(email);
+            if (oldToken != null && oldToken.get() != null && cacheSession != null) {
+                cacheSession.evict(oldToken.get().toString());
             }
         }
 
         String accessKey = UUID.randomUUID().toString();
 
-        if (cacheSession != null)       cacheSession.put(accessKey, email);
-        if (cacheUsersActivate != null) cacheUsersActivate.put(email, accessKey);
-
-        boolean isAdmin = authRepository.hasAdministratorById(userId);
-        System.out.println("userId: " + userId + " | isAdmin: " + isAdmin);
+        if (cacheSession != null) cacheSession.put(accessKey, email);
 
         if (isAdmin && cacheAdminActivate != null) {
             cacheAdminActivate.put(email, accessKey);
             return Map.of("accessKey", accessKey, "role", "ADMIN");
         }
 
+        if (cacheUsersActivate != null) cacheUsersActivate.put(email, accessKey);
         return Map.of("accessKey", accessKey, "role", "USER");
     }
 
@@ -62,5 +65,23 @@ public class AuthService {
             }
         }
         return null;
+    }
+
+    public boolean validateRole(String accessKey, String role, String email) {
+        if ("ADMIN".equals(role)) {
+            Cache cacheAdmin = cacheManager.getCache("usersAdministratorActivate");
+            if (cacheAdmin == null) return false;
+            Cache.ValueWrapper wrapper = cacheAdmin.get(email);
+            return wrapper != null && accessKey.equals(wrapper.get());
+        }
+
+        if ("USER".equals(role)) {
+            Cache cacheUser = cacheManager.getCache("usersActivate");
+            if (cacheUser == null) return false;
+            Cache.ValueWrapper wrapper = cacheUser.get(email);
+            return wrapper != null && accessKey.equals(wrapper.get());
+        }
+
+        return false;
     }
 }
