@@ -32,8 +32,23 @@ public class UserLoginTest {
 
     @BeforeEach
     void setUp() {
+        jdbcTemplate.execute("DELETE FROM failures");
+        jdbcTemplate.execute("DELETE FROM support_messages");
+        jdbcTemplate.execute("DELETE FROM votes");
+        jdbcTemplate.execute("DELETE FROM passenger_trips");
+        jdbcTemplate.execute("DELETE FROM transport_requests");
+        jdbcTemplate.execute("DELETE FROM trips");
+        jdbcTemplate.execute("DELETE FROM stops");
+        jdbcTemplate.execute("DELETE FROM passengers");
+        jdbcTemplate.execute("DELETE FROM drivers");
+        jdbcTemplate.execute("DELETE FROM buses");
         jdbcTemplate.execute("DELETE FROM administrators");
         jdbcTemplate.execute("DELETE FROM users");
+        jdbcTemplate.execute("DELETE FROM routes");
+        jdbcTemplate.execute("DELETE FROM addresses");
+        jdbcTemplate.execute("DELETE FROM schedules");
+        jdbcTemplate.execute("DELETE FROM settings");
+        jdbcTemplate.execute("DELETE FROM notices");
     }
 
     @Test
@@ -54,7 +69,7 @@ public class UserLoginTest {
         mockMvc.perform(post("/users/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(registerBody))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
         // Perform login
         String loginBody = String.format("""
@@ -90,7 +105,7 @@ public class UserLoginTest {
         mockMvc.perform(post("/users/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(registerBody))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
         // Retrieve the registered user's ID
         Long userId = jdbcTemplate.queryForObject(

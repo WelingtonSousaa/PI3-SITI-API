@@ -105,6 +105,24 @@ public class MySQLMetadataDataSourceProxy {
             if (position == 1) return "p_email";
             if (position == 2) return "p_password";
             if (position == 3) return "p_identifier_document";
+            if (position == 4) return "p_name";
+        } else if (name.contains("PROCCREATEPASSENGER")) {
+            if (position == 1) return "p_id";
+            if (position == 2) return "p_birth_date";
+            if (position == 3) return "p_phone";
+            if (position == 4) return "p_type";
+            if (position == 5) return "p_registration_number";
+            if (position == 6) return "p_bond_proof";
+            if (position == 7) return "p_id_address";
+        } else if (name.contains("PROCCREATEDRIVER")) {
+            if (position == 1) return "p_id";
+            if (position == 2) return "p_cnh_number";
+            if (position == 3) return "p_cnh_category";
+            if (position == 4) return "p_name";
+            if (position == 5) return "p_birth_date";
+            if (position == 6) return "p_cnh_validity_date";
+            if (position == 7) return "p_phone";
+            if (position == 8) return "p_id_address";
         } else if (name.contains("PROCGETUSERBYEMAILANDPASSWORD")) {
             if (position == 1) return "p_email";
             if (position == 2) return "p_password";
@@ -113,6 +131,8 @@ public class MySQLMetadataDataSourceProxy {
         } else if (name.contains("PROCEXISTUSERBYEMAIL")) {
             if (position == 1) return "p_email";
         } else if (name.contains("HASUSERADMINISTRATORBYID")) {
+            if (position == 1) return "p_id";
+        } else if (name.contains("HASUSERDRIVERBYID")) {
             if (position == 1) return "p_id";
         }
         return null;

@@ -18,8 +18,12 @@ public class UserController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(service.register(request));
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        service.register(request);
+        return org.springframework.http.ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(java.util.Map.of(
+                "success", true,
+                "message", "Cadastro enviado para homologação!"
+        ));
     }
 
 }

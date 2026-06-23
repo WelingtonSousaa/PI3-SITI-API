@@ -18,13 +18,15 @@ public class UserRepository implements BaseRepository{
     public void create(
             String email,
             String password,
-            String identifierDocument
+            String identifierDocument,
+            String name
     ) {
         SimpleJdbcCall call = new SimpleJdbcCall(jdbc).withProcedureName("ProcCreateUser");
         call.execute(Map.of(
                 "p_email", email,
                 "p_password", password,
-                "p_identifier_document", identifierDocument
+                "p_identifier_document", identifierDocument,
+                "p_name", name
         ));
     }
 
@@ -35,13 +37,14 @@ public class UserRepository implements BaseRepository{
 
     public User findById(Long id) {
         List<User> result = jdbc.query(
-                "SELECT id, email, status, identifier_document FROM users WHERE id = ?",
+                "SELECT id, email, status, identifier_document, name FROM users WHERE id = ?",
                 (rs, row) -> {
                     User u = new User();
                     u.setId(rs.getLong("id"));
                     u.setEmail(rs.getString("email"));
                     u.setStatus(rs.getString("status"));
                     u.setIdentifierDocument(rs.getString("identifier_document"));
+                    u.setName(rs.getString("name"));
                     return u;
                 },
                 id
@@ -56,6 +59,7 @@ public class UserRepository implements BaseRepository{
             u.setEmail(rs.getString("email"));
             u.setStatus(rs.getString("status"));
             u.setIdentifierDocument(rs.getString("identifier_document"));
+            u.setName(rs.getString("name"));
             return u;
         }, email);
         return result.isEmpty() ? null : result.getFirst();

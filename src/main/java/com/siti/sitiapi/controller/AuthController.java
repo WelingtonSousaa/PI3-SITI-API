@@ -17,16 +17,22 @@ public class AuthController {
 
     @GetMapping("/authenticate")
     public ResponseEntity<?> authenticate(@RequestAttribute("userActivate") String userActivate) {
-        return ResponseEntity.ok("Acesso liberado para " + userActivate);
+        try {
+            Map<String, Object> profile = authService.getUserProfileByEmail(userActivate);
+            return ResponseEntity.ok(profile);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("erro", e.getMessage()));
+        }
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            Map<String, String> response = authService.login(request.getEmail(), request.getPassword());
+            Map<String, Object> response = authService.login(request.getEmail(), request.getPassword());
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("erro", e.getMessage()));
+            String errorMsg = e.getMessage() != null ? e.getMessage() : "Erro desconhecido";
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("erro", errorMsg));
         }
     }
 }

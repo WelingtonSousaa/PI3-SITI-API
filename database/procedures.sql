@@ -7,20 +7,23 @@ DELIMITER $$
 CREATE PROCEDURE ProcCreateUser(
     IN p_email               VARCHAR(255),
     IN p_password            VARCHAR(255),
-    IN p_identifier_document VARCHAR(50)
+    IN p_identifier_document VARCHAR(50),
+    IN p_name                VARCHAR(255)
 )
 BEGIN
 INSERT INTO users (
     email,
     password,
     status,
-    identifier_document
+    identifier_document,
+    name
 )
 VALUES (
            p_email,
            p_password,
-           'active',
-           p_identifier_document
+           'Pendente',
+           p_identifier_document,
+           p_name
        );
 END$$
 DELIMITER ;
@@ -34,7 +37,7 @@ DROP PROCEDURE IF EXISTS ProcGetUserByEmail;
 DELIMITER $$
 CREATE PROCEDURE ProcGetUserByEmail(IN p_email VARCHAR(255))
 BEGIN
-SELECT id, email, status, identifier_document
+SELECT id, email, status, identifier_document, name
 FROM users
 WHERE email = p_email;
 END$$

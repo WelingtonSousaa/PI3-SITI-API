@@ -11,6 +11,7 @@ public class Passenger {
     private String type;
     private String registrationNumber;
     private String bondProof;
+    private String photoUrl;
     private Long idAddress;
     private User user;
 }

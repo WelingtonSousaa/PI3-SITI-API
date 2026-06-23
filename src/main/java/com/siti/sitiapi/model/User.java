@@ -9,4 +9,5 @@ public class User {
     private String password;
     private String status;
     private String identifierDocument;
+    private String name;
 }

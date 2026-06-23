@@ -24,10 +24,13 @@ public class UserService {
             );
         }
 
+        String name = com.siti.sitiapi.service.AuthService.formatNameFromEmail(request.getEmail());
+
         repository.create(
                 request.getEmail(),
                 request.getPassword(),
-                request.getIdentifierDocument()
+                request.getIdentifierDocument(),
+                name
         );
 
         User user = repository.findByEmail(request.getEmail());

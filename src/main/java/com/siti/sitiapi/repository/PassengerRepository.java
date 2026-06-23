@@ -49,7 +49,7 @@ public class PassengerRepository implements BaseRepository {
 
     public Passenger findById(Long id) {
         var result = jdbc.query(
-                "SELECT id, birth_date, phone, type, registration_number, bond_proof, id_address FROM passengers WHERE id = ?",
+                "SELECT id, birth_date, phone, type, registration_number, bond_proof, photo_url, id_address FROM passengers WHERE id = ?",
                 (rs, row) -> {
                     Passenger p = new Passenger();
                     p.setId(rs.getLong("id"));
@@ -59,11 +59,16 @@ public class PassengerRepository implements BaseRepository {
                     p.setType(rs.getString("type"));
                     p.setRegistrationNumber(rs.getString("registration_number"));
                     p.setBondProof(rs.getString("bond_proof"));
+                    p.setPhotoUrl(rs.getString("photo_url"));
                     p.setIdAddress(rs.getLong("id_address"));
                     return p;
                 },
                 id
         );
         return result.isEmpty() ? null : result.get(0);
+    }
+
+    public void updatePhotoUrl(Long id, String photoUrl) {
+        jdbc.update("UPDATE passengers SET photo_url = ? WHERE id = ?", photoUrl, id);
     }
 }

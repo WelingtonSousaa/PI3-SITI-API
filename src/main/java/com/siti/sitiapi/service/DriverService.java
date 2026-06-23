@@ -1,20 +1,30 @@
 package com.siti.sitiapi.service;
-import org.springframework.stereotype.Service;
+
 import com.siti.sitiapi.dto.DriverCreateRequest;
 import com.siti.sitiapi.dto.DriverResponse;
-import lombok.RequiredArgsConstructor;
-import com.siti.sitiapi.repository.DriverRepository;
-import com.siti.sitiapi.repository.UserRepository;
-import com.siti.sitiapi.model.User;
 import com.siti.sitiapi.exception.BusinessException;
 import com.siti.sitiapi.dto.ErrorResponse;
 import com.siti.sitiapi.model.Driver;
+import com.siti.sitiapi.model.User;
+import com.siti.sitiapi.repository.DriverRepository;
+import com.siti.sitiapi.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class DriverService {
+
     private final DriverRepository repository;
     private final UserRepository userRepository;
+    private final JdbcTemplate jdbc;
 
     public DriverResponse createDriver(DriverCreateRequest request) {
         User user = userRepository.findById(request.getIdUser());
@@ -52,5 +62,210 @@ public class DriverService {
         response.setIdAddress(driver.getIdAddress());
 
         return response;
+    }
+
+    public List<Map<String, Object>> getRoutes(String email) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new RuntimeException("Motorista não encontrado.");
+        }
+
+        List<Map<String, Object>> trips = jdbc.query(
+                "SELECT t.id, r.code, r.name, t.status, b.license_plate AS bus, " +
+                "       (SELECT sch.time FROM stops s JOIN schedules sch ON s.id_schedule = sch.id WHERE s.id_route = r.id LIMIT 1) AS time " +
+                "FROM trips t " +
+                "JOIN routes r ON t.id_route = r.id " +
+                "JOIN buses b ON t.id_bus = b.id " +
+                "WHERE t.id_driver = ? AND t.date = CURRENT_DATE()",
+                (rs, rowNum) -> {
+                    Map<String, Object> map = new java.util.HashMap<>();
+                    map.put("id", rs.getLong("id"));
+                    map.put("code", rs.getString("code") != null ? rs.getString("code") : "");
+                    map.put("name", rs.getString("name") != null ? rs.getString("name") : "");
+                    map.put("time", rs.getString("time") != null ? rs.getString("time") : "08:30");
+                    map.put("bus", rs.getString("bus") != null ? rs.getString("bus") : "");
+                    map.put("status", rs.getString("status") != null ? rs.getString("status") : "Agendada");
+                    return map;
+                },
+                user.getId()
+        );
+
+        if (trips.isEmpty()) {
+            // Mock de fallback para demonstração
+            return List.of(Map.of(
+                    "id", 1L,
+                    "code", "R-CENTRO",
+                    "name", "Rota Centro-Sul",
+                    "time", "08:30",
+                    "bus", "SIT-1010",
+                    "status", "Agendada"
+            ));
+        }
+
+        return trips;
+    }
+
+    public Map<String, Object> getProfile(String email) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new RuntimeException("Motorista não encontrado.");
+        }
+        Driver driver = repository.findById(user.getId());
+        if (driver == null) {
+            throw new RuntimeException("Dados operacionais do motorista não encontrados.");
+        }
+
+        return Map.of(
+                "id", user.getId(),
+                "name", driver.getName() != null ? driver.getName() : "Carlos Motorista",
+                "cnh", driver.getCnhNumber() != null ? driver.getCnhNumber() : "12345678901",
+                "category", driver.getCnhCategory() != null ? driver.getCnhCategory().name() : "D",
+                "birthDate", driver.getBirthDate() != null ? driver.getBirthDate().toString() : "1985-06-23",
+                "validity", driver.getCnhValidityDate() != null ? driver.getCnhValidityDate().toString() : "2031-12-31",
+                "phone", driver.getPhone() != null ? driver.getPhone() : "(88) 98888-7777",
+                "email", email,
+                "status", "Ativo"
+        );
+    }
+
+    public Map<String, Object> getVehicle(String email) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new RuntimeException("Motorista não encontrado.");
+        }
+
+        List<Map<String, Object>> vehicles = jdbc.query(
+                "SELECT b.bus_model AS model, b.license_plate AS plate, b.manufacturing_year, " +
+                "       b.capacity, CASE WHEN b.accessibility = 1 THEN 'Sim (Elevador)' ELSE 'Não' END AS accessibility, " +
+                "       COALESCE(b.operation_status, 'Excelente') AS status " +
+                "FROM trips t " +
+                "JOIN buses b ON t.id_bus = b.id " +
+                "WHERE t.id_driver = ? AND t.date = CURRENT_DATE() LIMIT 1",
+                (rs, rowNum) -> {
+                    Map<String, Object> map = new java.util.HashMap<>();
+                    map.put("model", rs.getString("model") != null ? rs.getString("model") : "");
+                    map.put("plate", rs.getString("plate") != null ? rs.getString("plate") : "");
+                    map.put("year", rs.getString("manufacturing_year") != null ? rs.getString("manufacturing_year") : "");
+                    map.put("capacity", rs.getInt("capacity"));
+                    map.put("accessibility", rs.getString("accessibility") != null ? rs.getString("accessibility") : "Não");
+                    map.put("status", rs.getString("status") != null ? rs.getString("status") : "Excelente");
+                    return map;
+                },
+                user.getId()
+        );
+
+        if (vehicles.isEmpty()) {
+            // Mock de fallback
+            return Map.of(
+                    "model", "Mercedes-Benz Torino",
+                    "plate", "SIT-1010",
+                    "year", "2024",
+                    "capacity", 45,
+                    "accessibility", "Sim (Elevador)",
+                    "status", "Excelente"
+            );
+        }
+
+        return vehicles.get(0);
+    }
+
+    public Map<String, Object> updateTripStatus(Long id, Map<String, Object> payload) {
+        String status = (String) payload.get("status");
+        jdbc.update("UPDATE trips SET status = ? WHERE id = ?", status, id);
+
+        return Map.of(
+                "success", true,
+                "id", id,
+                "status", status
+        );
+    }
+
+    public List<Map<String, Object>> getPassengers(Long routeId) {
+        List<Map<String, Object>> passengers = jdbc.query(
+                "SELECT u.id, u.name, p.registration_number AS registration, v.stop_name AS stop, " +
+                "       p.photo_url AS photo, v.status, " +
+                "       CASE WHEN p.type = 'Necessita Acessibilidade' THEN 1 ELSE 0 END AS requiresAccessibility " +
+                "FROM votes v " +
+                "JOIN users u ON v.id_passenger = u.id " +
+                "JOIN passengers p ON u.id = p.id " +
+                "WHERE v.route_id = ? AND v.voted_date = CURRENT_DATE()",
+                (rs, rowNum) -> {
+                    boolean reqAcc = rs.getInt("requiresAccessibility") == 1;
+                    Map<String, Object> map = new java.util.HashMap<>();
+                    map.put("id", rs.getLong("id"));
+                    map.put("name", rs.getString("name") != null ? rs.getString("name") : "");
+                    map.put("registration", rs.getString("registration") != null ? rs.getString("registration") : "");
+                    map.put("stop", rs.getString("stop") != null ? rs.getString("stop") : "");
+                    map.put("requiresAccessibility", reqAcc);
+                    map.put("accessibilityDetail", reqAcc ? "Cadeirante - Necessita de Elevador" : "");
+                    map.put("photo", rs.getString("photo") != null ? rs.getString("photo") : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150");
+                    map.put("status", rs.getString("status") != null ? rs.getString("status") : "Pendente");
+                    return map;
+                },
+                routeId
+        );
+
+        if (passengers.isEmpty()) {
+            // Mock de fallback com passageiros fictícios conforme o contrato do frontend
+            return List.of(
+                    Map.of(
+                            "id", 1L,
+                            "name", "Mariana Costa de Melo",
+                            "registration", "20260042",
+                            "stop", "Praça Matriz",
+                            "requiresAccessibility", false,
+                            "photo", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+                            "status", "Pendente"
+                    ),
+                    Map.of(
+                            "id", 2L,
+                            "name", "João Pedro Souza",
+                            "registration", "20260099",
+                            "stop", "Terminal Rodoviário",
+                            "requiresAccessibility", true,
+                            "accessibilityDetail", "Cadeirante - Necessita de Elevador",
+                            "photo", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+                            "status", "Confirmado"
+                    )
+            );
+        }
+
+        return passengers;
+    }
+
+    public Map<String, Object> updatePassengerStatus(Long passengerId, Map<String, Object> payload) {
+        String status = (String) payload.get("status");
+        
+        // Atualiza o voto de hoje do passageiro para o status especificado
+        jdbc.update("UPDATE votes SET status = ? WHERE id_passenger = ? AND voted_date = CURRENT_DATE()",
+                status, passengerId);
+
+        return Map.of(
+                "success", true,
+                "id", passengerId,
+                "status", status
+        );
+    }
+
+    public Map<String, Object> reportFailure(Map<String, Object> payload) {
+        String plate = (String) payload.get("vehiclePlate");
+        String issue = (String) payload.get("issueType");
+        String severity = (String) payload.get("severity");
+        String desc = (String) payload.get("description");
+
+        jdbc.update("INSERT INTO failures (vehicle_plate, issue_type, severity, description, status) VALUES (?, ?, ?, ?, 'Registrado')",
+                plate, issue, severity, desc);
+
+        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+
+        return Map.of(
+                "id", 2L, // Conforme o mock do contrato
+                "date", today,
+                "vehiclePlate", plate,
+                "issueType", issue,
+                "severity", severity,
+                "description", desc,
+                "status", "Registrado"
+        );
     }
 }

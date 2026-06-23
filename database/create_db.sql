@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users
     password            VARCHAR(255) NOT NULL,
     status              VARCHAR(50)  NOT NULL DEFAULT 'active',
     identifier_document VARCHAR(50),
+    name                VARCHAR(255),
     created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -35,7 +36,8 @@ CREATE TABLE IF NOT EXISTS passengers
     phone            VARCHAR(20),
     type             VARCHAR(50),
     registration_number VARCHAR(50),
-    bail_proof       VARCHAR(255),
+    bond_proof       VARCHAR(255),
+    photo_url        VARCHAR(500),
     id_address       BIGINT,
     CONSTRAINT fk_passenger_user    FOREIGN KEY (id)         REFERENCES users(id)     ON DELETE CASCADE,
     CONSTRAINT fk_passenger_address FOREIGN KEY (id_address) REFERENCES addresses(id)
@@ -54,13 +56,16 @@ CREATE TABLE IF NOT EXISTS administrators
 
 CREATE TABLE IF NOT EXISTS drivers
 (
-    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id               BIGINT PRIMARY KEY,
     name             VARCHAR(255),
     phone            VARCHAR(20),
     birth_date       DATE,
-    license_number   VARCHAR(50),
-    license_category VARCHAR(10),
-    license_expiry   DATE
+    cnh_number       VARCHAR(50),
+    cnh_category     VARCHAR(10),
+    cnh_validity_date DATE,
+    id_address       BIGINT,
+    CONSTRAINT fk_driver_user    FOREIGN KEY (id)         REFERENCES users(id)     ON DELETE CASCADE,
+    CONSTRAINT fk_driver_address FOREIGN KEY (id_address) REFERENCES addresses(id)
     );
 
 CREATE TABLE IF NOT EXISTS buses
@@ -139,4 +144,52 @@ CREATE TABLE IF NOT EXISTS transport_requests
     CONSTRAINT fk_tr_passenger FOREIGN KEY (id_passenger) REFERENCES passengers(id),
     CONSTRAINT fk_tr_bus       FOREIGN KEY (id_bus)       REFERENCES buses(id)
     );
+
+CREATE TABLE IF NOT EXISTS settings
+(
+    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    open_time        VARCHAR(10),
+    close_time       VARCHAR(10),
+    blocked_next_day BOOLEAN
+);
+
+CREATE TABLE IF NOT EXISTS notices
+(
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title      VARCHAR(255),
+    message    TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS support_messages
+(
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id    BIGINT,
+    subject    VARCHAR(255),
+    message    TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_sm_user FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS failures
+(
+    id            BIGINT AUTO_INCREMENT PRIMARY KEY,
+    vehicle_plate VARCHAR(20),
+    issue_type    VARCHAR(100),
+    severity      VARCHAR(50),
+    description   TEXT,
+    status        VARCHAR(50) DEFAULT 'Registrado',
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS votes
+(
+    id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id_passenger BIGINT,
+    route_id     BIGINT,
+    stop_name    VARCHAR(255),
+    voted_date   DATE,
+    status       VARCHAR(50) DEFAULT 'Pendente',
+    CONSTRAINT fk_vote_passenger FOREIGN KEY (id_passenger) REFERENCES passengers(id)
+);
 

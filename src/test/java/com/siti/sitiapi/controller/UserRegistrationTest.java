@@ -32,8 +32,23 @@ public class UserRegistrationTest {
 
     @BeforeEach
     void setUp() {
+        jdbcTemplate.execute("DELETE FROM failures");
+        jdbcTemplate.execute("DELETE FROM support_messages");
+        jdbcTemplate.execute("DELETE FROM votes");
+        jdbcTemplate.execute("DELETE FROM passenger_trips");
+        jdbcTemplate.execute("DELETE FROM transport_requests");
+        jdbcTemplate.execute("DELETE FROM trips");
+        jdbcTemplate.execute("DELETE FROM stops");
+        jdbcTemplate.execute("DELETE FROM passengers");
+        jdbcTemplate.execute("DELETE FROM drivers");
+        jdbcTemplate.execute("DELETE FROM buses");
         jdbcTemplate.execute("DELETE FROM administrators");
         jdbcTemplate.execute("DELETE FROM users");
+        jdbcTemplate.execute("DELETE FROM routes");
+        jdbcTemplate.execute("DELETE FROM addresses");
+        jdbcTemplate.execute("DELETE FROM schedules");
+        jdbcTemplate.execute("DELETE FROM settings");
+        jdbcTemplate.execute("DELETE FROM notices");
     }
 
     @Test
@@ -53,9 +68,9 @@ public class UserRegistrationTest {
         mockMvc.perform(post("/users/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", notNullValue()))
-                .andExpect(jsonPath("$.email", is(email)));
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.message", is("Cadastro enviado para homologação!")));
     }
 
     @Test
@@ -76,7 +91,7 @@ public class UserRegistrationTest {
         mockMvc.perform(post("/users/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody1))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
         // Attempt to register the second user with the same email
         String requestBody2 = String.format("""
