@@ -24,7 +24,7 @@ public class PassengerRepository implements BaseRepository {
             String bondProof,
             Long idAddress
     ) {
-        SimpleJdbcCall call = new SimpleJdbcCall(jdbc).withProcedureName("ProcCreatePassenger");
+        SimpleJdbcCall call = new SimpleJdbcCall(java.util.Objects.requireNonNull(jdbc)).withProcedureName("ProcCreatePassenger");
 
         Map<String, Object> params = new HashMap<>();
         params.put("p_id", id);

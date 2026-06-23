@@ -123,3 +123,43 @@ VALUES (
        );
 END$$
 DELIMITER ;
+
+-- =============================================================================
+-- ProcCreateDriver
+-- =============================================================================
+
+DROP PROCEDURE IF EXISTS ProcCreateDriver;
+DELIMITER $$
+CREATE PROCEDURE ProcCreateDriver(
+    IN p_id               BIGINT,
+    IN p_cnh_number       VARCHAR(20),
+    IN p_cnh_category     VARCHAR(10),
+    IN p_name             VARCHAR(255),
+    IN p_birth_date       DATE,
+    IN p_cnh_validity_date DATE,
+    IN p_phone            VARCHAR(20),
+    IN p_id_address       BIGINT
+)
+BEGIN
+INSERT INTO drivers (
+    id,
+    cnh_number,
+    cnh_category,
+    name,
+    birth_date,
+    cnh_validity_date,
+    phone,
+    id_address
+)
+VALUES (
+           p_id,
+           p_cnh_number,
+           p_cnh_category,
+           p_name,
+           p_birth_date,
+           p_cnh_validity_date,
+           p_phone,
+           p_id_address
+       );
+END$$
+DELIMITER ;
