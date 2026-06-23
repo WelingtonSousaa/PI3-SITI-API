@@ -33,4 +33,14 @@ public class AuthRepository implements BaseRepository{
         );
         return !result.isEmpty() && result.get(0) == 1;
     }
+
+    public boolean hasDriverById(Long id) {
+        List<Integer> result = jdbcTemplate.query(
+                "CALL HasUserDriverById(?)",
+                (rs, row) -> rs.getInt("result"),
+                id
+        );
+        return !result.isEmpty() && result.get(0) == 1;
+    }
+
 }

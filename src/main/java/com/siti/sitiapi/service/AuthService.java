@@ -22,6 +22,7 @@ public class AuthService {
         Cache cacheSession       = cacheManager.getCache("session");
         Cache cacheUsersActivate = cacheManager.getCache("usersActivate");
         Cache cacheAdminActivate = cacheManager.getCache("usersAdministratorActivate");
+        Cache cacheDriverActivate = cacheManager.getCache("usersDriverActivate"); // Novo cache para Motoristas
 
         User user = authRepository.getUserByEmailAndPassword(email, password);
 
@@ -31,11 +32,20 @@ public class AuthService {
 
         Long userId = ((Number) user.getId()).longValue();
         boolean isAdmin = authRepository.hasAdministratorById(userId);
+        boolean isDriver = authRepository.hasDriverById(userId); // Verifica se é motorista
 
-        System.out.println("userId: " + userId + " | isAdmin: " + isAdmin);
+        System.out.println("userId: " + userId + " | isAdmin: " + isAdmin + " | isDriver: " + isDriver);
 
-        // evict token antigo
-        Cache cacheAtivo = isAdmin ? cacheAdminActivate : cacheUsersActivate;
+        // Define o cache ativo com base na role para limpar o token antigo
+        Cache cacheAtivo = null;
+        if (isAdmin) {
+            cacheAtivo = cacheAdminActivate;
+        } else if (isDriver) {
+            cacheAtivo = cacheDriverActivate;
+        } else {
+            cacheAtivo = cacheUsersActivate;
+        }
+
         if (cacheAtivo != null) {
             Cache.ValueWrapper oldToken = cacheAtivo.get(email);
             if (oldToken != null && oldToken.get() != null && cacheSession != null) {
@@ -47,9 +57,18 @@ public class AuthService {
 
         if (cacheSession != null) cacheSession.put(accessKey, email);
 
-        if (isAdmin && cacheAdminActivate != null) {
-            cacheAdminActivate.put(email, accessKey);
+        if (isAdmin) {
+            if (cacheAdminActivate != null) {
+                cacheAdminActivate.put(email, accessKey);
+            }
             return Map.of("accessKey", accessKey, "role", "ADMIN");
+        }
+
+        if (isDriver) {
+            if (cacheDriverActivate != null) {
+                cacheDriverActivate.put(email, accessKey);
+            }
+            return Map.of("accessKey", accessKey, "role", "DRIVE"); // Retorna DRIVE mesmo se o cache de validação for null
         }
 
         if (cacheUsersActivate != null) cacheUsersActivate.put(email, accessKey);
@@ -72,6 +91,19 @@ public class AuthService {
             Cache cacheAdmin = cacheManager.getCache("usersAdministratorActivate");
             if (cacheAdmin == null) return false;
             Cache.ValueWrapper wrapper = cacheAdmin.get(email);
+            return wrapper != null && accessKey.equals(wrapper.get());
+        }
+
+        if ("DRIVE".equals(role)) { // Validação para a role DRIVE
+            Cache cacheDriver = cacheManager.getCache("usersDriverActivate");
+            if (cacheDriver == null) {
+                // Fallback: se o cache de motorista for null, valida pelo cache de sessão geral
+                Cache cacheSession = cacheManager.getCache("session");
+                if (cacheSession == null) return false;
+                Cache.ValueWrapper wrapper = cacheSession.get(accessKey);
+                return wrapper != null && email.equals(wrapper.get());
+            }
+            Cache.ValueWrapper wrapper = cacheDriver.get(email);
             return wrapper != null && accessKey.equals(wrapper.get());
         }
 

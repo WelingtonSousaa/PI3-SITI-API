@@ -137,19 +137,17 @@ CREATE PROCEDURE ProcCreateDriver(
     IN p_name             VARCHAR(255),
     IN p_birth_date       DATE,
     IN p_cnh_validity_date DATE,
-    IN p_phone            VARCHAR(20),
-    IN p_id_address       BIGINT
+    IN p_phone            VARCHAR(20)
 )
 BEGIN
 INSERT INTO drivers (
     id,
-    cnh_number,
-    cnh_category,
+    license_number,
+    license_category,
     name,
     birth_date,
-    cnh_validity_date,
-    phone,
-    id_address
+    license_expiry,
+    phone
 )
 VALUES (
            p_id,
@@ -158,8 +156,21 @@ VALUES (
            p_name,
            p_birth_date,
            p_cnh_validity_date,
-           p_phone,
-           p_id_address
+           p_phone
        );
+END$$
+DELIMITER ;
+
+-- =============================================================================
+-- HasUserDriverById
+-- =============================================================================
+
+DROP PROCEDURE IF EXISTS HasUserDriverById;
+DELIMITER $$
+CREATE PROCEDURE HasUserDriverById(IN p_id BIGINT)
+BEGIN
+SELECT EXISTS(
+    SELECT 1 FROM drivers WHERE id = p_id
+) AS result;
 END$$
 DELIMITER ;
