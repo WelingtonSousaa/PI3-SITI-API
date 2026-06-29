@@ -115,7 +115,3 @@ Caso não queira configurar o MySQL ou o Java na sua máquina, você pode subir 
    docker run --rm -p 8080:8080 -e DB_USER=root -e DB_PASSWORD=root siti-api
    ```
 
----
-
-## 🔗 Links Úteis
-* **Quadro de Tarefas / Documentação**: [GitHub Projects](https://github.com/users/r7melo/projects/12)
