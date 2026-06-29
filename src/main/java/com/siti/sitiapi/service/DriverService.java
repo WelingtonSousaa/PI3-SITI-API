@@ -90,18 +90,6 @@ public class DriverService {
                 user.getId()
         );
 
-        if (trips.isEmpty()) {
-            // Mock de fallback para demonstração
-            return List.of(Map.of(
-                    "id", 1L,
-                    "code", "R-CENTRO",
-                    "name", "Rota Centro-Sul",
-                    "time", "08:30",
-                    "bus", "SIT-1010",
-                    "status", "Agendada"
-            ));
-        }
-
         return trips;
     }
 
@@ -155,15 +143,7 @@ public class DriverService {
         );
 
         if (vehicles.isEmpty()) {
-            // Mock de fallback
-            return Map.of(
-                    "model", "Mercedes-Benz Torino",
-                    "plate", "SIT-1010",
-                    "year", "2024",
-                    "capacity", 45,
-                    "accessibility", "Sim (Elevador)",
-                    "status", "Excelente"
-            );
+            return Map.of(); // Retorna vazio se não tiver ônibus escalado hoje
         }
 
         return vehicles.get(0);
@@ -205,31 +185,6 @@ public class DriverService {
                 routeId
         );
 
-        if (passengers.isEmpty()) {
-            // Mock de fallback com passageiros fictícios conforme o contrato do frontend
-            return List.of(
-                    Map.of(
-                            "id", 1L,
-                            "name", "Mariana Costa de Melo",
-                            "registration", "20260042",
-                            "stop", "Praça Matriz",
-                            "requiresAccessibility", false,
-                            "photo", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
-                            "status", "Pendente"
-                    ),
-                    Map.of(
-                            "id", 2L,
-                            "name", "João Pedro Souza",
-                            "registration", "20260099",
-                            "stop", "Terminal Rodoviário",
-                            "requiresAccessibility", true,
-                            "accessibilityDetail", "Cadeirante - Necessita de Elevador",
-                            "photo", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-                            "status", "Confirmado"
-                    )
-            );
-        }
-
         return passengers;
     }
 
@@ -253,13 +208,23 @@ public class DriverService {
         String severity = (String) payload.get("severity");
         String desc = (String) payload.get("description");
 
-        jdbc.update("INSERT INTO failures (vehicle_plate, issue_type, severity, description, status) VALUES (?, ?, ?, ?, 'Registrado')",
-                plate, issue, severity, desc);
+        org.springframework.jdbc.support.KeyHolder keyHolder = new org.springframework.jdbc.support.GeneratedKeyHolder();
+        jdbc.update(connection -> {
+            java.sql.PreparedStatement ps = connection.prepareStatement(
+                    "INSERT INTO failures (vehicle_plate, issue_type, severity, description, status) VALUES (?, ?, ?, ?, 'Registrado')",
+                    java.sql.Statement.RETURN_GENERATED_KEYS
+            );
+            ps.setString(1, plate);
+            ps.setString(2, issue);
+            ps.setString(3, severity);
+            ps.setString(4, desc);
+            return ps;
+        }, keyHolder);
 
         String today = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
         return Map.of(
-                "id", 2L, // Conforme o mock do contrato
+                "id", keyHolder.getKey() != null ? keyHolder.getKey().longValue() : 0L,
                 "date", today,
                 "vehiclePlate", plate,
                 "issueType", issue,

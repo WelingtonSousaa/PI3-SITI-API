@@ -23,6 +23,7 @@ public class PassengerService {
     private final PassengerRepository passengerRepository;
     private final UserRepository userRepository;
     private final JdbcTemplate jdbc;
+    private final EmailService emailService;
 
     public PassengerResponse create(PassengerCreateRequest request) {
         User user = userRepository.findById(request.getIdUser());
@@ -87,9 +88,6 @@ public class PassengerService {
                     Long.parseLong(routeId)
             );
             String accessibility = (!accessList.isEmpty() && accessList.get(0)) ? "Sim (Elevador)" : "Não";
-            if (accessList.isEmpty()) {
-                accessibility = "Sim (Elevador)"; // Default para mock
-            }
 
             List<String> timeList = jdbc.query(
                     "SELECT sch.time FROM stops s JOIN schedules sch ON s.id_schedule = sch.id WHERE s.id_route = ? LIMIT 1",
@@ -236,6 +234,10 @@ public class PassengerService {
 
         jdbc.update("INSERT INTO support_messages (user_id, subject, message) VALUES (?, ?, ?)",
                 user.getId(), subject, message);
+
+        emailService.sendSimpleMessage("transportes@siti.edu.br", 
+                "Novo Suporte SITI: " + subject, 
+                "Mensagem de: " + email + "\n\n" + message);
 
         return Map.of(
                 "success", true,

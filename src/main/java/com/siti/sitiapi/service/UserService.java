@@ -40,4 +40,30 @@ public class UserService {
         response.setEmail(user.getEmail());
         return response;
     }
+
+    public RegisterResponse registerAdmin(com.siti.sitiapi.dto.AdminRegisterRequest request) {
+        if (repository.existsByEmail(request.getEmail())) {
+            throw new BusinessException(
+                    new ErrorResponse(400, "Email já utilizado!", "/users/admin/register")
+            );
+        }
+
+        // CNPJ basic validation or any other check can go here
+        
+        repository.createAdmin(
+                request.getEmail(),
+                request.getPassword(),
+                request.getCnpj(),
+                request.getCompanyName(),
+                request.getCity(),
+                request.getState()
+        );
+
+        User user = repository.findByEmail(request.getEmail());
+
+        RegisterResponse response = new RegisterResponse();
+        response.setId(user.getId());
+        response.setEmail(user.getEmail());
+        return response;
+    }
 }

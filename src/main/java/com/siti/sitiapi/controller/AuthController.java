@@ -35,4 +35,24 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("erro", errorMsg));
         }
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> payload) {
+        try {
+            authService.forgotPassword(payload.get("email"));
+            return ResponseEntity.ok(Map.of("success", true, "message", "Link de recuperação enviado com sucesso"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> payload) {
+        try {
+            authService.resetPassword(payload.get("token"), payload.get("newPassword"));
+            return ResponseEntity.ok(Map.of("success", true, "message", "Senha redefinida com sucesso"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        }
+    }
 }

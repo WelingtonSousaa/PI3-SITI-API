@@ -26,4 +26,13 @@ public class UserController {
         ));
     }
 
+    @PostMapping("/admin/register")
+    public ResponseEntity<?> registerAdmin(@RequestBody com.siti.sitiapi.dto.AdminRegisterRequest request) {
+        service.registerAdmin(request);
+        return org.springframework.http.ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(java.util.Map.of(
+                "success", true,
+                "message", "Administrador cadastrado com sucesso!"
+        ));
+    }
+
 }

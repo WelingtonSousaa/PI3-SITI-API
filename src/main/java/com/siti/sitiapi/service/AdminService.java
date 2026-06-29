@@ -48,6 +48,60 @@ public class AdminService {
         adminRepository.rejectHomologation(id);
     }
 
+    public List<Map<String, Object>> getPassengers() {
+        return adminRepository.getAllPassengers();
+    }
+
+    @Transactional
+    public Map<String, Object> createPassenger(Map<String, Object> payload) {
+        String name = (String) payload.get("name");
+        String email = (String) payload.get("email");
+        String document = (String) payload.get("document");
+        String phone = (String) payload.get("phone");
+        String type = (String) payload.get("type");
+        String registrationCode = (String) payload.get("registrationCode");
+
+        userRepository.create(email, "123456", document, name);
+        User user = userRepository.findByEmail(email);
+        
+        adminRepository.approveHomologation(user.getId());
+        
+        passengerRepository.create(
+                user.getId(),
+                LocalDate.of(2000, 1, 1),
+                phone != null ? phone : "",
+                type != null ? type : "Estudante",
+                registrationCode != null ? registrationCode : "",
+                "comprovante_matricula_2026.pdf",
+                null
+        );
+
+        return Map.of(
+                "id", user.getId(),
+                "name", name,
+                "email", email,
+                "status", "Ativo"
+        );
+    }
+
+    @Transactional
+    public Map<String, Object> updatePassenger(Long id, Map<String, Object> payload) {
+        String name = (String) payload.get("name");
+        String phone = (String) payload.get("phone");
+        String type = (String) payload.get("type");
+        String registrationCode = (String) payload.get("registrationCode");
+
+        adminRepository.updatePassenger(id, name, phone, type, registrationCode);
+        
+        return Map.of("success", true, "message", "Dados atualizados com sucesso!");
+    }
+
+    @Transactional
+    public Map<String, Object> deletePassenger(Long id) {
+        adminRepository.deletePassenger(id);
+        return Map.of("success", true, "message", "Aluno inativado com sucesso!");
+    }
+
     public List<Map<String, Object>> getRoutes() {
         return adminRepository.getRoutes();
     }
@@ -166,5 +220,45 @@ public class AdminService {
 
     public List<Map<String, Object>> getSupportMessages() {
         return adminRepository.getSupportMessages();
+    }
+
+    @Transactional
+    public Map<String, Object> createRoute(Map<String, Object> payload) {
+        String code = (String) payload.get("code");
+        String name = (String) payload.get("name");
+        String description = (String) payload.get("description");
+
+        Long routeId = adminRepository.insertRoute(code, name, description);
+
+        List<Map<String, Object>> stops = (List<Map<String, Object>>) payload.get("stops");
+        if (stops != null) {
+            for (Map<String, Object> stop : stops) {
+                String street = (String) stop.get("street");
+                String time = (String) stop.get("time");
+
+                Long addressId = adminRepository.insertAddress(street);
+                Long scheduleId = adminRepository.insertSchedule(time);
+
+                adminRepository.insertStop(routeId, addressId, scheduleId);
+            }
+        }
+
+        return Map.of("success", true, "message", "Rota criada com sucesso", "id", routeId);
+    }
+
+    public Map<String, Object> blockVoting(boolean block) {
+        adminRepository.updateSettings("06:00", "17:00", block);
+        return Map.of("success", true, "blockedNextDay", block);
+    }
+
+    public List<Map<String, Object>> getPassengerReports() {
+        return adminRepository.getPassengerReports();
+    }
+
+    @Transactional
+    public Map<String, Object> replaceVehicle(Long routeId, Map<String, Object> payload) {
+        Long newBusId = ((Number) payload.get("newBusId")).longValue();
+        adminRepository.updateTripVehicle(routeId, newBusId);
+        return Map.of("success", true, "message", "Ônibus substituído com sucesso na rota " + routeId);
     }
 }

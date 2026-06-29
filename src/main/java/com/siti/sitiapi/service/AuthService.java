@@ -23,6 +23,7 @@ public class AuthService {
     private final CacheManager cacheManager;
     private final PassengerRepository passengerRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final EmailService emailService;
 
     public static boolean isMockEmail(String email) {
         if (email == null) return false;
@@ -292,5 +293,46 @@ public class AuthService {
         }
 
         return false;
+    }
+
+    public void forgotPassword(String email) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new RuntimeException("E-mail não encontrado");
+        }
+        
+        String token = UUID.randomUUID().toString();
+        Cache cache = cacheManager.getCache("passwordResetTokens");
+        if (cache != null) {
+            cache.put(token, email);
+        }
+        
+        String link = "http://localhost:5173/reset-password?token=" + token;
+        emailService.sendSimpleMessage(email, "SITI - Recuperação de Senha", 
+                "Para redefinir sua senha, clique no link a seguir (expira em breve): " + link);
+    }
+
+    public void resetPassword(String token, String newPassword) {
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new RuntimeException("Senha incompatível: A senha deve conter pelo menos 8 caracteres.");
+        }
+        
+        Cache cache = cacheManager.getCache("passwordResetTokens");
+        if (cache == null) throw new RuntimeException("Cache não configurado");
+        
+        Cache.ValueWrapper wrapper = cache.get(token);
+        if (wrapper == null) {
+            throw new RuntimeException("Token expirado ou inválido.");
+        }
+        
+        String email = (String) wrapper.get();
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new RuntimeException("Usuário não encontrado.");
+        }
+        
+        jdbcTemplate.update("UPDATE users SET password = ? WHERE id = ?", newPassword, user.getId());
+        
+        cache.evict(token);
     }
 }

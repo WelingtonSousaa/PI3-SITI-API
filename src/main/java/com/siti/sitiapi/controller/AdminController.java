@@ -48,6 +48,45 @@ public class AdminController {
         }
     }
 
+    @GetMapping("/passengers")
+    public ResponseEntity<?> getPassengers(@RequestAttribute("role") String role) {
+        if (isNotAdmin(role)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.ok(adminService.getPassengers());
+    }
+
+    @PostMapping("/passengers")
+    public ResponseEntity<?> createPassenger(@RequestBody Map<String, Object> payload, @RequestAttribute("role") String role) {
+        if (isNotAdmin(role)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        try {
+            Map<String, Object> result = adminService.createPassenger(payload);
+            return ResponseEntity.status(HttpStatus.CREATED).body(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/passengers/{id}")
+    public ResponseEntity<?> updatePassenger(@PathVariable Long id, @RequestBody Map<String, Object> payload, @RequestAttribute("role") String role) {
+        if (isNotAdmin(role)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        try {
+            Map<String, Object> result = adminService.updatePassenger(id, payload);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/passengers/{id}")
+    public ResponseEntity<?> deletePassenger(@PathVariable Long id, @RequestAttribute("role") String role) {
+        if (isNotAdmin(role)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        try {
+            Map<String, Object> result = adminService.deletePassenger(id);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @GetMapping("/routes")
     public ResponseEntity<?> getRoutes(@RequestAttribute("role") String role) {
         if (isNotAdmin(role)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -120,5 +159,30 @@ public class AdminController {
     public ResponseEntity<?> getSupportMessages(@RequestAttribute("role") String role) {
         if (isNotAdmin(role)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         return ResponseEntity.ok(adminService.getSupportMessages());
+    }
+
+    @PostMapping("/routes")
+    public ResponseEntity<?> createRoute(@RequestBody Map<String, Object> payload, @RequestAttribute("role") String role) {
+        if (isNotAdmin(role)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.status(HttpStatus.CREATED).body(adminService.createRoute(payload));
+    }
+
+    @PostMapping("/settings/block-voting")
+    public ResponseEntity<?> blockVoting(@RequestBody Map<String, Boolean> payload, @RequestAttribute("role") String role) {
+        if (isNotAdmin(role)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        Boolean block = payload.getOrDefault("block", true);
+        return ResponseEntity.ok(adminService.blockVoting(block));
+    }
+
+    @GetMapping("/reports/passengers")
+    public ResponseEntity<?> getPassengerReports(@RequestAttribute("role") String role) {
+        if (isNotAdmin(role)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.ok(adminService.getPassengerReports());
+    }
+
+    @PutMapping("/routes/{routeId}/replace-vehicle")
+    public ResponseEntity<?> replaceVehicle(@PathVariable Long routeId, @RequestBody Map<String, Object> payload, @RequestAttribute("role") String role) {
+        if (isNotAdmin(role)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.ok(adminService.replaceVehicle(routeId, payload));
     }
 }
