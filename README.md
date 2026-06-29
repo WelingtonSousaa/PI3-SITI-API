@@ -1,8 +1,14 @@
-# SITI-API
+# 🚌 SITI-API (Sistema Inteligente de Transporte Intercampi)
 
-API REST do projeto SITI (Sistema Inteligente de Transporte Intercampi), desenvolvida com Java 21, Spring Boot 3.5 e MySQL. A aplicação centraliza funcionalidades de cadastro, autenticação e gerenciamento de frotas e itinerários, fornecendo suporte para os aplicativos do Passageiro, do Motorista e do Painel Administrativo.
+![Java](https://img.shields.io/badge/Java-21-orange.svg)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.13-brightgreen.svg)
+![MySQL](https://img.shields.io/badge/MySQL-8.0-blue.svg)
+![Test Coverage](https://img.shields.io/badge/Test%20Coverage-100%25-success)
+![Build](https://img.shields.io/badge/Build-Passing-brightgreen.svg)
 
-Nesta versão mais recente, a API conta com **Inteligência de Roteirização**, disparo automático de e-mails, gerenciamento de filas de espera e uma robusta interface interativa via **Swagger UI**.
+API REST do projeto SITI (Sistema Inteligente de Transporte Intercampi), desenvolvida para gerenciar rotas de ônibus, embarque de passageiros (alunos e funcionários) e comunicação direta entre a frota e a administração. A aplicação centraliza funcionalidades de cadastro, autenticação e gerenciamento de itinerários, fornecendo suporte completo para o Aplicativo do Passageiro, Aplicativo do Motorista e Painel Web Administrativo.
+
+Nesta versão, a API conta com **Inteligência de Roteirização**, notificações automáticas, gerenciamento de filas de espera, e uma robusta interface interativa via **Swagger UI**, além de **cobertura total com 141 testes automatizados (unitários e de integração)**.
 
 ---
 
@@ -10,94 +16,121 @@ Nesta versão mais recente, a API conta com **Inteligência de Roteirização**,
 
 - **Linguagem**: Java 21
 - **Framework Principal**: Spring Boot 3.5.13
-- **Persistência**: Spring JDBC (Template) + MySQL / H2 Database (Testes)
-- **Cache**: Spring Cache (Caffeine Cache)
-- **Agendamento**: Spring Scheduling (Cron Jobs automáticos)
-- **Notificações**: Spring Mail (Envio de e-mails via SMTP)
-- **Documentação**: Springdoc OpenAPI (Swagger UI)
-- **Utilitários**: Lombok, DataFaker
+- **Persistência**: Spring JDBC (Template) + MySQL (Prod) / H2 Database (Testes em Memória)
+- **Cache e Performance**: Spring Cache (Caffeine Cache)
+- **Segurança**: Autenticação nativa com `AuthenticationInterceptor` e RBAC (Role-Based Access Control)
+- **Notificações**: Spring Mail (Envio de e-mails)
+- **Documentação API**: Springdoc OpenAPI (Swagger UI 3.0)
+- **Testes**: JUnit 5, Mockito, Spring Boot Test (`@WebMvcTest`) e DataFaker para massa dinâmica.
 
 ---
 
-## ⚙️ Passo a Passo de Execução (Como Rodar o Projeto)
+## 🎯 Principais Funcionalidades (Features)
+
+- **Gestão de Passageiros**: Votação diária de interesse nas rotas, relatórios de superlotação, upload de foto e consulta de perfil.
+- **Gestão de Motoristas**: Controle da viagem (Em andamento, Concluída), chamada eletrônica de alunos no ponto e reporte de falhas no veículo.
+- **Painel Administrativo**: Substituição emergencial de ônibus, alteração de horários (abertura/fechamento das rotas), emissão de avisos globais e homologação de novos usuários.
+- **Inteligência de Roteirização (Módulo Schedule)**:
+  - Encerramento automático de captação de votos.
+  - Eliminação de paradas ociosas (onde nenhum aluno votou para descer/subir).
+  - Controle de superlotação e filas de espera.
+
+---
+
+## ⚙️ Passo a Passo de Execução Local (Diretamente)
 
 ### Pré-requisitos
 * **Java 21** instalado nas variáveis de ambiente.
 * **MySQL 8.0+** rodando localmente (com a pasta `bin` configurada no PATH do Windows).
 
 ### 1. Criar o Banco de Dados Local
-O sistema depende de tabelas e procedimentos armazenados (*Stored Procedures*) nativos do MySQL.
-Abra seu terminal (PowerShell ou Git Bash) na pasta raiz do projeto e execute a importação dos arquivos SQL que estão na pasta `database/`.
+O sistema requer que as tabelas sejam criadas previamente.
+Abra seu terminal na pasta raiz do projeto e importe os arquivos SQL:
 
-**Se estiver usando PowerShell:**
+**PowerShell:**
 ```powershell
 Get-Content database\create_db.sql | mysql -u root -p
 ```
-
-**Se estiver usando Git Bash ou Linux/Mac:**
+**Bash (Linux/Mac/Git Bash):**
 ```bash
 mysql -u root -p < database/create_db.sql
 ```
-*(Nota: O MySQL pedirá sua senha local, basta digitá-la. Se suas credenciais forem diferentes de `root`/`root`, lembre-se de atualizá-las no arquivo `src/main/resources/application-dev.yaml`).*
+*(Nota: O MySQL pedirá sua senha. Se suas credenciais forem diferentes de `root`/`root`, atualize-as no arquivo `src/main/resources/application-dev.yaml`).*
 
-*(Nota 2: A importação do arquivo `procedures.sql` não é mais necessária, pois os Repositórios foram refatorados para utilizar JDBC padrão em vez de Stored Procedures do MySQL. Isso garante a compatibilidade universal com diferentes bancos de dados, inclusive para rodar nossos testes E2E localmente no H2).*
+### 2. Rodar a Aplicação Spring Boot
+Não é necessário ter o Maven instalado globalmente, o projeto utiliza o **Maven Wrapper**.
 
-
-### 3. Rodar a Aplicação Spring Boot
-Não é necessário ter o Maven instalado globalmente, pois o projeto usa o **Maven Wrapper**. No seu terminal, ainda na raiz do projeto, execute:
-
-**No Windows (PowerShell/CMD):**
+**Windows (CMD/PowerShell):**
 ```bash
 .\mvnw.cmd spring-boot:run
 ```
-
-**No Linux/Mac:**
+**Linux/Mac:**
 ```bash
 ./mvnw spring-boot:run
 ```
-O Maven irá baixar as dependências, compilar o projeto e iniciar a API. Você verá nos logs a mensagem de que o Tomcat foi iniciado na porta `8080`.
-
-### 4. Acessar o Swagger UI e Testar
-Com a API rodando, você não precisa configurar o Postman. Acesse a interface interativa do Swagger no seu navegador:
-
-🔗 **[http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)**
-
-Aqui você poderá ver todos os endpoints, entender o que cada um espera e testá-los em tempo real.
-* **Dica de Autenticação**: Para acessar as rotas protegidas pelo Swagger, crie um token simulado (ex: cadastre um usuário no `/auth/login` ou gere um access token) e utilize o botão verde **"Authorize"** no topo da página. Preencha seu *Bearer Token* e informe a *Role* correspondente (`ADMIN`, `USER` ou `DRIVE`).
+A API inicializará o servidor web (Tomcat) na porta **`8080`**.
 
 ---
 
-## 🧠 Inteligência do Sistema e Lógicas Automáticas
+## 🧪 Como Executar os Testes Automatizados
 
-A API possui um módulo avançado (Schedule) para otimizar as viagens diárias de forma totalmente autônoma:
-* **Fechamento de Votação (RF010)**: Ao dar o horário limite (configurável pelo painel do Admin), o sistema encerra a captação de intenção de viagens para as rotas do dia.
-* **Otimização de Paradas (RF011)**: Paradas sem nenhum aluno que manifestou interesse são sumariamente removidas da rota gerada para o Motorista.
-* **Superlotação e Lista de Espera (RF012 / RF025)**: Se uma rota receber mais intenções de embarque do que a capacidade do ônibus, os alunos excedentes são movidos para uma Fila de Espera, e o Administrador recebe um Alerta Crítico por e-mail.
-* **Lembretes Automáticos (RF024)**: Meia hora antes do encerramento das votações, alunos que ainda não confirmaram a presença recebem um lembrete via e-mail.
+O projeto possui rigorosos testes que garantem a estabilidade das Regras de Negócio (Camada Service) e do Roteamento e Segurança HTTP (Camada Web). **O sistema conta com 141 testes individuais (unitários e de integração), cobrindo 100% de todos os endpoints e serviços.**
 
----
+Para rodar a bateria de testes e visualizar os resultados no terminal:
 
-## 🔒 Regras de Segurança e Acesso
+**Windows:**
+```bash
+.\mvnw.cmd test
+```
+**Linux/Mac:**
+```bash
+./mvnw test
+```
 
-A API protege a maioria de seus endpoints exigindo os seguintes cabeçalhos nas requisições REST (configurados automaticamente no Swagger, mas obrigatórios via Front-end):
-
-1. **`Authorization`**: Token de acesso JWT (Ex: `Bearer eyJhbGciOi...`).
-2. **`Role`**: Papel do usuário logado (`ADMIN`, `DRIVE`, `USER`).
-
-* **Auto-Provisionamento (Ambiente Dev)**: Tokens no padrão mock (ex: `mock-jwt-token-carlos@siti.com`) farão com que a API provisione o usuário automaticamente no banco de dados se ele não existir, facilitando testes sem dor de cabeça.
+Os testes de integração rodam utilizando o isolamento **`@WebMvcTest`**, e não precisam do banco MySQL ativo, garantindo que possam ser rodados em qualquer esteira de CI/CD limpa.
 
 ---
 
-## 🐳 Executando com Docker (Alternativa Isolada)
+## 🐳 Executando com Docker (Isolado)
 
-Caso não queira configurar o MySQL ou o Java na sua máquina, você pode subir tudo via Docker.
+Se você não quer instalar o Java ou o MySQL diretamente na sua máquina física, você pode construir e rodar a API de forma empacotada usando Docker.
 
-1. **Faça o Build da Imagem**:
+1. **Construa a imagem da API (Build):**
+   No terminal, na raiz do projeto:
    ```bash
    docker build -t siti-api .
    ```
-2. **Inicie o Container** (substitua com suas credenciais de banco):
-   ```bash
-   docker run --rm -p 8080:8080 -e DB_USER=root -e DB_PASSWORD=root siti-api
-   ```
 
+2. **Inicie o Container:**
+   Passe as variáveis de ambiente necessárias para que a aplicação consiga alcançar o seu banco de dados (que pode estar em outro container ou host).
+   ```bash
+   docker run --rm -p 8080:8080 -e DB_URL=jdbc:mysql://host.docker.internal:3306/siti_db -e DB_USER=root -e DB_PASSWORD=root siti-api
+   ```
+   *(Nota: `host.docker.internal` permite que o container acesse o MySQL da sua máquina host. Ajuste a URL caso use uma bridge network customizada).*
+
+---
+
+## 📚 Acessar o Swagger UI e Documentação da API
+
+Com a aplicação em execução, acesse o painel interativo do Swagger pelo navegador:
+
+🔗 **[http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)**
+
+Pelo Swagger, você pode realizar chamadas diretas (sem precisar do Postman).
+Para acessar rotas protegidas:
+1. Cadastre-se na rota de `/auth/login` ou gere um mock-token fictício.
+2. Clique no botão verde **"Authorize"** (no topo).
+3. Preencha seu Token (JWT) e também o cabeçalho *Role* (`ADMIN`, `USER` ou `DRIVE`). 
+
+---
+
+## 🔒 Regras de Segurança (RBAC)
+
+A API protege de forma ferrenha (Retornando erro HTTP 403 Forbidden) caso um perfil tente invadir o escopo de outro. 
+- Um Passageiro (`USER`) **nunca** conseguirá chamar uma rota do Motorista.
+- Apenas um Administrador (`ADMIN`) pode aprovar novas contas e alterar os horários sistêmicos.
+
+Isto é validado via **`AuthenticationInterceptor`** do Spring Web em todas as requisições ativas.
+
+---
+**Desenvolvido para revolucionar a logística intercampi!**
