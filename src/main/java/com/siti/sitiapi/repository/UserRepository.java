@@ -21,17 +21,29 @@ public class UserRepository implements BaseRepository{
             String identifierDocument,
             String name
     ) {
-        SimpleJdbcCall call = new SimpleJdbcCall(jdbc).withProcedureName("ProcCreateUser");
-        call.execute(Map.of(
-                "p_email", email,
-                "p_password", password,
-                "p_identifier_document", identifierDocument,
-                "p_name", name
-        ));
+        jdbc.update("INSERT INTO users (email, password, status, identifier_document, name) VALUES (?, ?, 'Pendente', ?, ?)",
+                email, password, identifierDocument, name);
+    }
+
+    public void createAdmin(
+            String email,
+            String password,
+            String cnpj,
+            String companyName,
+            String city,
+            String state
+    ) {
+        jdbc.update("INSERT INTO users (email, password, status, identifier_document, name) VALUES (?, ?, 'Ativo', ?, ?)",
+                email, password, cnpj, companyName);
+        
+        Long userId = jdbc.queryForObject("SELECT id FROM users WHERE email = ?", Long.class, email);
+        
+        jdbc.update("INSERT INTO administrators (id, name, city, state) VALUES (?, ?, ?, ?)",
+                userId, companyName, city, state);
     }
 
     public boolean existsByEmail(String email) {
-        Boolean exists = jdbc.queryForObject("CALL ProcExistUserByEmail(?)", Boolean.class, email);
+        Boolean exists = jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM users WHERE email = ?)", Boolean.class, email);
         return Boolean.TRUE.equals(exists);
     }
 
@@ -49,11 +61,11 @@ public class UserRepository implements BaseRepository{
                 },
                 id
         );
-        return result.isEmpty() ? null : result.get(0);
+        return result.isEmpty() ? null : result.getFirst();
     }
 
     public User findByEmail(String email) {
-        List<User> result = jdbc.query("CALL ProcGetUserByEmail(?)", (rs, row) -> {
+        List<User> result = jdbc.query("SELECT id, email, status, identifier_document, name FROM users WHERE email = ?", (rs, row) -> {
             User u = new User();
             u.setId(rs.getLong("id"));
             u.setEmail(rs.getString("email"));

@@ -22,19 +22,8 @@ public class DriverRepository {
             java.time.LocalDate cnhValidityDate,
             String phone,
             Long idAddress) {
-        SimpleJdbcCall call = new SimpleJdbcCall(java.util.Objects.requireNonNull(jdbc)).withProcedureName("ProcCreateDriver");
-
-        Map<String, Object> params = new HashMap<>();
-        params.put("p_id", id);
-        params.put("p_cnh_number", cnhNumber);
-        params.put("p_cnh_category", cnhCategory);
-        params.put("p_name", name);
-        params.put("p_birth_date", birthDate);
-        params.put("p_cnh_validity_date", cnhValidityDate);
-        params.put("p_phone", phone);
-        params.put("p_id_address", idAddress);
-
-        call.execute(params);
+        jdbc.update("INSERT INTO drivers (id, cnh_number, cnh_category, name, birth_date, cnh_validity_date, phone, id_address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                id, cnhNumber, cnhCategory, name, birthDate, cnhValidityDate, phone, idAddress);
     }
 
     public void validateDriver(Driver driver) throws Exception {

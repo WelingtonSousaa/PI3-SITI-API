@@ -44,6 +44,38 @@ public class AdminRepository {
         jdbc.update("UPDATE users SET status = 'Rejeitado' WHERE id = ?", id);
     }
 
+    public List<Map<String, Object>> getAllPassengers() {
+        return jdbc.query(
+                "SELECT u.id, u.name, u.email, u.identifier_document AS document, " +
+                "       COALESCE(p.phone, '') AS phone, " +
+                "       COALESCE(p.type, 'Estudante') AS type, " +
+                "       COALESCE(p.registration_code, '') AS registrationCode, " +
+                "       u.status " +
+                "FROM users u " +
+                "JOIN passengers p ON u.id = p.id",
+                (rs, rowNum) -> Map.of(
+                        "id", rs.getLong("id"),
+                        "name", rs.getString("name") != null ? rs.getString("name") : "",
+                        "email", rs.getString("email") != null ? rs.getString("email") : "",
+                        "document", rs.getString("document") != null ? rs.getString("document") : "",
+                        "phone", rs.getString("phone") != null ? rs.getString("phone") : "",
+                        "type", rs.getString("type") != null ? rs.getString("type") : "",
+                        "registrationCode", rs.getString("registrationCode") != null ? rs.getString("registrationCode") : "",
+                        "status", rs.getString("status") != null ? rs.getString("status") : ""
+                )
+        );
+    }
+
+    public void updatePassenger(Long id, String name, String phone, String type, String registrationCode) {
+        jdbc.update("UPDATE users SET name = ? WHERE id = ?", name, id);
+        jdbc.update("UPDATE passengers SET phone = ?, type = ?, registration_code = ? WHERE id = ?", 
+                    phone, type, registrationCode, id);
+    }
+
+    public void deletePassenger(Long id) {
+        jdbc.update("UPDATE users SET status = 'Inativo' WHERE id = ?", id);
+    }
+
     public List<Map<String, Object>> getRoutes() {
         List<Map<String, Object>> routes = jdbc.query(
                 "SELECT id, code, name, status FROM routes",
@@ -219,6 +251,69 @@ public class AdminRepository {
                         "subject", rs.getString("subject") != null ? rs.getString("subject") : "",
                         "message", rs.getString("message") != null ? rs.getString("message") : "",
                         "date", rs.getString("date") != null ? rs.getString("date") : ""
+                )
+        );
+    }
+
+    public Long insertRoute(String code, String name, String description) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbc.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(
+                    "INSERT INTO routes (code, name, description, status) VALUES (?, ?, ?, 'Ativa')",
+                    Statement.RETURN_GENERATED_KEYS
+            );
+            ps.setString(1, code);
+            ps.setString(2, name);
+            ps.setString(3, description);
+            return ps;
+        }, keyHolder);
+        return keyHolder.getKey() != null ? keyHolder.getKey().longValue() : null;
+    }
+
+    public Long insertAddress(String street) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbc.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(
+                    "INSERT INTO addresses (street) VALUES (?)",
+                    Statement.RETURN_GENERATED_KEYS
+            );
+            ps.setString(1, street);
+            return ps;
+        }, keyHolder);
+        return keyHolder.getKey() != null ? keyHolder.getKey().longValue() : null;
+    }
+
+    public Long insertSchedule(String time) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbc.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(
+                    "INSERT INTO schedules (time) VALUES (?)",
+                    Statement.RETURN_GENERATED_KEYS
+            );
+            ps.setString(1, time);
+            return ps;
+        }, keyHolder);
+        return keyHolder.getKey() != null ? keyHolder.getKey().longValue() : null;
+    }
+
+    public void insertStop(Long routeId, Long addressId, Long scheduleId) {
+        jdbc.update("INSERT INTO stops (status, id_route, id_address, id_schedule) VALUES ('Ativo', ?, ?, ?)",
+                routeId, addressId, scheduleId);
+    }
+
+    public void updateTripVehicle(Long routeId, Long newBusId) {
+        jdbc.update("UPDATE trips SET id_bus = ? WHERE id_route = ? AND date = CURRENT_DATE()", newBusId, routeId);
+    }
+
+    public List<Map<String, Object>> getPassengerReports() {
+        return jdbc.query(
+                "SELECT r.name AS route, COUNT(v.id) AS total_passengers " +
+                "FROM routes r " +
+                "LEFT JOIN votes v ON r.id = v.route_id AND v.voted_date = CURRENT_DATE() " +
+                "GROUP BY r.id, r.name",
+                (rs, rowNum) -> Map.of(
+                        "route", rs.getString("route") != null ? rs.getString("route") : "",
+                        "total_passengers", rs.getInt("total_passengers")
                 )
         );
     }

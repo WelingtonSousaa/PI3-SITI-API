@@ -16,31 +16,31 @@ public class AuthRepository implements BaseRepository{
     private final JdbcTemplate jdbcTemplate;
 
     public User getUserByEmailAndPassword(String email, String password) {
-        List<User> result = jdbcTemplate.query("CALL ProcGetUserByEmailAndPassword(?, ?)", (rs, row) -> {
+        List<User> result = jdbcTemplate.query("SELECT id, email FROM users WHERE email = ? AND password = ?", (rs, row) -> {
             User u = new User();
             u.setId(rs.getLong("id"));
             u.setEmail(rs.getString("email"));
             return u;
         }, email, password);
-        return result.isEmpty() ? null : result.get(0);
+        return result.isEmpty() ? null : result.getFirst();
     }
 
     public boolean hasAdministratorById(Long id) {
-        List<Integer> result = jdbcTemplate.query(
-                "CALL HasUserAdministratorById(?)",
-                (rs, row) -> rs.getInt("result"),
+        Boolean result = jdbcTemplate.queryForObject(
+                "SELECT EXISTS(SELECT 1 FROM administrators WHERE id = ?)",
+                Boolean.class,
                 id
         );
-        return !result.isEmpty() && result.get(0) == 1;
+        return Boolean.TRUE.equals(result);
     }
 
     public boolean hasDriverById(Long id) {
-        List<Integer> result = jdbcTemplate.query(
-                "CALL HasUserDriverById(?)",
-                (rs, row) -> rs.getInt("result"),
+        Boolean result = jdbcTemplate.queryForObject(
+                "SELECT EXISTS(SELECT 1 FROM drivers WHERE id = ?)",
+                Boolean.class,
                 id
         );
-        return !result.isEmpty() && result.get(0) == 1;
+        return Boolean.TRUE.equals(result);
     }
 
 }

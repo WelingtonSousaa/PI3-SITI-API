@@ -24,18 +24,8 @@ public class PassengerRepository implements BaseRepository {
             String bondProof,
             Long idAddress
     ) {
-        SimpleJdbcCall call = new SimpleJdbcCall(java.util.Objects.requireNonNull(jdbc)).withProcedureName("ProcCreatePassenger");
-
-        Map<String, Object> params = new HashMap<>();
-        params.put("p_id", id);
-        params.put("p_birth_date", birthDate);
-        params.put("p_phone", phone);
-        params.put("p_type", type);
-        params.put("p_registration_number", registrationNumber);
-        params.put("p_bond_proof", bondProof);
-        params.put("p_id_address", idAddress);
-
-        call.execute(params);
+        jdbc.update("INSERT INTO passengers (id, birth_date, phone, type, registration_number, bond_proof, id_address) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                id, birthDate, phone, type, registrationNumber, bondProof, idAddress);
     }
 
     public boolean existsById(Long id) {
