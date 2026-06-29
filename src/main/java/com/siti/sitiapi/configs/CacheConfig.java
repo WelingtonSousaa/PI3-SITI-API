@@ -13,6 +13,6 @@ public class CacheConfig {
     @Bean
     public CacheManager cacheManager() {
 
-        return new ConcurrentMapCacheManager("session", "usersAdministratorActivate", "usersActivate", "usersDriverActivate");
+        return new ConcurrentMapCacheManager("session", "usersAdministratorActivate", "usersActivate", "usersDriverActivate", "passwordResetTokens");
     }
 }
