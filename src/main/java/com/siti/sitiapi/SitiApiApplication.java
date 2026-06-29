@@ -12,4 +12,10 @@ public class SitiApiApplication {
         SpringApplication.run(SitiApiApplication.class, args);
     }
 
+    @org.springframework.context.annotation.Bean
+    public org.springframework.security.crypto.password.PasswordEncoder passwordEncoder() {
+        return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+    }
+
+
 }
