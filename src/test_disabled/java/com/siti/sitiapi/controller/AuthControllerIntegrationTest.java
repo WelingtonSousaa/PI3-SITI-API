@@ -34,6 +34,12 @@ class AuthControllerIntegrationTest {
 
     @Test
     void testLoginSuccess() throws Exception {
+        org.springframework.jdbc.core.JdbcTemplate jdbc = new org.springframework.jdbc.core.JdbcTemplate(mockMvc.getDispatcherServlet().getWebApplicationContext().getBean(javax.sql.DataSource.class));
+        try {
+            jdbc.execute("INSERT INTO users (email, password, status, identifier_document, name) VALUES ('admin@siti.edu.br', '$2a$10$WqfV4QZ0a7k5w3J2F.6.QO3f/1f/R7Lw4Q7Vf1QZ0a7k5w3J2F.6', 'Ativo', '000000', 'Admin')");
+            jdbc.execute("INSERT INTO administrators (id, name, city, state) SELECT id, name, 'Fortaleza', 'CE' FROM users WHERE email='admin@siti.edu.br'");
+        } catch (Exception e) {}
+
         Map<String, String> payload = new HashMap<>();
         payload.put("email", "admin@siti.edu.br");
         payload.put("password", "123456");

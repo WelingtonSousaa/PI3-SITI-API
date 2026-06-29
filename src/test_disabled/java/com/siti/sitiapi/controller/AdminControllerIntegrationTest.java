@@ -54,7 +54,11 @@ class AdminControllerIntegrationTest {
 
     @Test
     void testHomologateSuccess() throws Exception {
-        mockMvc.perform(post("/admin/homologate/1")
+        org.springframework.jdbc.core.JdbcTemplate jdbc = new org.springframework.jdbc.core.JdbcTemplate(mockMvc.getDispatcherServlet().getWebApplicationContext().getBean(javax.sql.DataSource.class));
+        jdbc.execute("INSERT INTO users (email, password, status, identifier_document, name) VALUES ('pending@siti.edu.br', '123456', 'Pendente', '111', 'Pending')");
+        Long pendingId = jdbc.queryForObject("SELECT id FROM users WHERE email='pending@siti.edu.br'", Long.class);
+
+        mockMvc.perform(post("/admin/homologate/" + pendingId)
                 .header("Authorization", "Bearer " + MOCK_TOKEN)
                 .header("Role", "ADMIN"))
                 .andExpect(status().isOk());
@@ -197,7 +201,9 @@ class AdminControllerIntegrationTest {
     @Test
     void testCreateRouteSuccess() throws Exception {
         Map<String, Object> payload = new HashMap<>();
-        payload.put("routeName", "Nova Rota");
+        payload.put("code", "R-100");
+        payload.put("name", "Nova Rota");
+        payload.put("description", "Descricao da Rota");
 
         mockMvc.perform(post("/admin/routes")
                 .header("Authorization", "Bearer " + MOCK_TOKEN)
@@ -242,6 +248,10 @@ class AdminControllerIntegrationTest {
     void testCreateVehicleSuccess() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         payload.put("plate", "XYZ-9876");
+        payload.put("model", "Volks");
+        payload.put("year", "2020");
+        payload.put("capacity", 40);
+        payload.put("accessibility", "Sim");
 
         mockMvc.perform(post("/admin/vehicles")
                 .header("Authorization", "Bearer " + MOCK_TOKEN)
@@ -286,6 +296,12 @@ class AdminControllerIntegrationTest {
     void testCreateDriverSuccess() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         payload.put("name", "Motorista de Teste");
+        payload.put("cnh", "12345678901");
+        payload.put("category", "D");
+        payload.put("birthDate", "1990-01-01");
+        payload.put("validity", "2030-01-01");
+        payload.put("phone", "(88) 99999-8888");
+        payload.put("email", "driver_test@siti.edu.br");
 
         mockMvc.perform(post("/admin/drivers")
                 .header("Authorization", "Bearer " + MOCK_TOKEN)
@@ -329,7 +345,9 @@ class AdminControllerIntegrationTest {
     @Test
     void testUpdateSettingsSuccess() throws Exception {
         Map<String, Object> payload = new HashMap<>();
-        payload.put("settingName", "Novo Valor");
+        payload.put("openTime", "08:00");
+        payload.put("closeTime", "18:00");
+        payload.put("blockedNextDay", false);
 
         mockMvc.perform(put("/admin/settings")
                 .header("Authorization", "Bearer " + MOCK_TOKEN)
@@ -358,6 +376,7 @@ class AdminControllerIntegrationTest {
     void testCreateNoticeSuccess() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         payload.put("title", "Aviso");
+        payload.put("message", "Conteudo do aviso");
 
         mockMvc.perform(post("/admin/notices")
                 .header("Authorization", "Bearer " + MOCK_TOKEN)
@@ -453,7 +472,7 @@ class AdminControllerIntegrationTest {
     @Test
     void testReplaceVehicleSuccess() throws Exception {
         Map<String, Object> payload = new HashMap<>();
-        payload.put("vehicleId", 2L);
+        payload.put("newBusId", 2);
 
         mockMvc.perform(put("/admin/routes/1/replace-vehicle")
                 .header("Authorization", "Bearer " + MOCK_TOKEN)

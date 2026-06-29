@@ -49,7 +49,7 @@ public class AdminRepository {
                 "SELECT u.id, u.name, u.email, u.identifier_document AS document, " +
                 "       COALESCE(p.phone, '') AS phone, " +
                 "       COALESCE(p.type, 'Estudante') AS type, " +
-                "       COALESCE(p.registration_code, '') AS registrationCode, " +
+                "       COALESCE(p.registration_number, '') AS registrationCode, " +
                 "       u.status " +
                 "FROM users u " +
                 "JOIN passengers p ON u.id = p.id",
@@ -68,7 +68,7 @@ public class AdminRepository {
 
     public void updatePassenger(Long id, String name, String phone, String type, String registrationCode) {
         jdbc.update("UPDATE users SET name = ? WHERE id = ?", name, id);
-        jdbc.update("UPDATE passengers SET phone = ?, type = ?, registration_code = ? WHERE id = ?", 
+        jdbc.update("UPDATE passengers SET phone = ?, type = ?, registration_number = ? WHERE id = ?", 
                     phone, type, registrationCode, id);
     }
 
@@ -131,8 +131,8 @@ public class AdminRepository {
                 "       CASE WHEN b.accessibility = 1 THEN 'Sim' ELSE 'Não' END AS accessibility, " +
                 "       COALESCE(b.operation_status, 'Ativo') AS status, " +
                 "       (SELECT COUNT(*) FROM votes v " +
-                "        WHERE v.voted_date = CURRENT_DATE() " +
-                "          AND v.route_id IN (SELECT t.id_route FROM trips t WHERE t.id_bus = b.id AND t.date = CURRENT_DATE()) " +
+                "        WHERE v.voted_date = CURRENT_DATE " +
+                "          AND v.route_id IN (SELECT t.id_route FROM trips t WHERE t.id_bus = b.id AND t.date = CURRENT_DATE) " +
                 "       ) AS votes " +
                 "FROM buses b",
                 (rs, rowNum) -> {
@@ -156,7 +156,7 @@ public class AdminRepository {
             PreparedStatement ps = connection.prepareStatement(
                     "INSERT INTO buses (license_plate, bus_model, manufacturing_year, capacity, accessibility, operation_status) " +
                     "VALUES (?, ?, ?, ?, ?, 'Ativo')",
-                    Statement.RETURN_GENERATED_KEYS
+                    new String[]{"id"}
             );
             ps.setString(1, plate);
             ps.setString(2, model);
@@ -228,7 +228,7 @@ public class AdminRepository {
         jdbc.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(
                     "INSERT INTO notices (title, message) VALUES (?, ?)",
-                    Statement.RETURN_GENERATED_KEYS
+                    new String[]{"id"}
             );
             ps.setString(1, title);
             ps.setString(2, message);
@@ -240,18 +240,25 @@ public class AdminRepository {
     public List<Map<String, Object>> getSupportMessages() {
         return jdbc.query(
                 "SELECT sm.id, sm.user_id AS userId, u.name AS userName, u.email AS userEmail, " +
-                "       sm.subject, sm.message, DATE_FORMAT(sm.created_at, '%d/%m/%Y') AS date " +
+                "       sm.subject, sm.message, sm.created_at " +
                 "FROM support_messages sm " +
                 "JOIN users u ON sm.user_id = u.id",
-                (rs, rowNum) -> Map.of(
+                (rs, rowNum) -> {
+                    java.sql.Timestamp ts = rs.getTimestamp("created_at");
+                    String dateStr = "";
+                    if (ts != null) {
+                        dateStr = ts.toLocalDateTime().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                    }
+                    return Map.of(
                         "id", rs.getLong("id"),
                         "userId", rs.getLong("userId"),
                         "userName", rs.getString("userName") != null ? rs.getString("userName") : "",
                         "userEmail", rs.getString("userEmail") != null ? rs.getString("userEmail") : "",
                         "subject", rs.getString("subject") != null ? rs.getString("subject") : "",
                         "message", rs.getString("message") != null ? rs.getString("message") : "",
-                        "date", rs.getString("date") != null ? rs.getString("date") : ""
-                )
+                        "date", dateStr
+                    );
+                }
         );
     }
 
@@ -260,7 +267,7 @@ public class AdminRepository {
         jdbc.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(
                     "INSERT INTO routes (code, name, description, status) VALUES (?, ?, ?, 'Ativa')",
-                    Statement.RETURN_GENERATED_KEYS
+                    new String[]{"id"}
             );
             ps.setString(1, code);
             ps.setString(2, name);
@@ -275,7 +282,7 @@ public class AdminRepository {
         jdbc.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(
                     "INSERT INTO addresses (street) VALUES (?)",
-                    Statement.RETURN_GENERATED_KEYS
+                    new String[]{"id"}
             );
             ps.setString(1, street);
             return ps;
@@ -288,7 +295,7 @@ public class AdminRepository {
         jdbc.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(
                     "INSERT INTO schedules (time) VALUES (?)",
-                    Statement.RETURN_GENERATED_KEYS
+                    new String[]{"id"}
             );
             ps.setString(1, time);
             return ps;
@@ -302,14 +309,14 @@ public class AdminRepository {
     }
 
     public void updateTripVehicle(Long routeId, Long newBusId) {
-        jdbc.update("UPDATE trips SET id_bus = ? WHERE id_route = ? AND date = CURRENT_DATE()", newBusId, routeId);
+        jdbc.update("UPDATE trips SET id_bus = ? WHERE id_route = ? AND date = CURRENT_DATE", newBusId, routeId);
     }
 
     public List<Map<String, Object>> getPassengerReports() {
         return jdbc.query(
                 "SELECT r.name AS route, COUNT(v.id) AS total_passengers " +
                 "FROM routes r " +
-                "LEFT JOIN votes v ON r.id = v.route_id AND v.voted_date = CURRENT_DATE() " +
+                "LEFT JOIN votes v ON r.id = v.route_id AND v.voted_date = CURRENT_DATE " +
                 "GROUP BY r.id, r.name",
                 (rs, rowNum) -> Map.of(
                         "route", rs.getString("route") != null ? rs.getString("route") : "",

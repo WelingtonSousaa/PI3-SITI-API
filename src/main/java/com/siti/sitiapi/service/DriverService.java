@@ -212,7 +212,7 @@ public class DriverService {
         jdbc.update(connection -> {
             java.sql.PreparedStatement ps = connection.prepareStatement(
                     "INSERT INTO failures (vehicle_plate, issue_type, severity, description, status) VALUES (?, ?, ?, ?, 'Registrado')",
-                    java.sql.Statement.RETURN_GENERATED_KEYS
+                    new String[]{"id"}
             );
             ps.setString(1, plate);
             ps.setString(2, issue);

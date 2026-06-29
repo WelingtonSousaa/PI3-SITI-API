@@ -148,12 +148,13 @@ public class PassengerService {
         }
         String routeIdStr = String.valueOf(payload.get("routeId"));
         String stop = (String) payload.get("stop");
+        if (stop == null) stop = (String) payload.get("stopName");
 
         // Remove voto anterior de hoje
-        jdbc.update("DELETE FROM votes WHERE id_passenger = ? AND voted_date = CURRENT_DATE()", user.getId());
+        jdbc.update("DELETE FROM votes WHERE id_passenger = ? AND voted_date = CURRENT_DATE", user.getId());
 
         // Insere o novo voto
-        jdbc.update("INSERT INTO votes (id_passenger, route_id, stop_name, voted_date) VALUES (?, ?, ?, CURRENT_DATE())",
+        jdbc.update("INSERT INTO votes (id_passenger, route_id, stop_name, voted_date) VALUES (?, ?, ?, CURRENT_DATE)",
                 user.getId(), Long.parseLong(routeIdStr), stop);
 
         return Map.of(
@@ -165,13 +166,17 @@ public class PassengerService {
 
     public List<Map<String, Object>> getNotices() {
         return jdbc.query(
-                "SELECT id, DATE_FORMAT(created_at, '%d/%m/%Y') AS date, title, message FROM notices ORDER BY created_at DESC",
-                (rs, rowNum) -> Map.of(
+                "SELECT id, created_at, title, message FROM notices ORDER BY created_at DESC",
+                (rs, rowNum) -> {
+                    java.sql.Timestamp ts = rs.getTimestamp("created_at");
+                    String dateStr = ts != null ? ts.toLocalDateTime().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "";
+                    return Map.of(
                         "id", rs.getLong("id"),
-                        "date", rs.getString("date") != null ? rs.getString("date") : "",
+                        "date", dateStr,
                         "title", rs.getString("title") != null ? rs.getString("title") : "",
                         "message", rs.getString("message") != null ? rs.getString("message") : ""
-                )
+                    );
+                }
         );
     }
 
@@ -183,7 +188,7 @@ public class PassengerService {
 
         // Tenta achar o voto do passageiro hoje
         List<Long> votedRoutes = jdbc.query(
-                "SELECT route_id FROM votes WHERE id_passenger = ? AND voted_date = CURRENT_DATE()",
+                "SELECT route_id FROM votes WHERE id_passenger = ? AND voted_date = CURRENT_DATE",
                 (rs, rowNum) -> rs.getLong("route_id"),
                 user.getId()
         );
@@ -201,7 +206,7 @@ public class PassengerService {
                     "FROM trips t " +
                     "JOIN drivers d ON t.id_driver = d.id " +
                     "JOIN routes r ON t.id_route = r.id " +
-                    "WHERE t.id_route = ? AND t.date = CURRENT_DATE() LIMIT 1",
+                    "WHERE t.id_route = ? AND t.date = CURRENT_DATE AND t.status = 'Em Andamento' LIMIT 1",
                     (rs, rowNum) -> Map.of(
                             "name", rs.getString("name") + " (Motorista)",
                             "phone", rs.getString("phone"),

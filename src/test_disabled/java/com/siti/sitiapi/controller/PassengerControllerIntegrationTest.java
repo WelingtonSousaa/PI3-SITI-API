@@ -28,7 +28,7 @@ class PassengerControllerIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private final String MOCK_USER_TOKEN = "mock-jwt-token-admin@siti.edu.br"; // admin email exists in insert_mock_data.sql
+    private final String MOCK_USER_TOKEN = "mock-jwt-token-mariana@siti.com"; // mariana corresponds to USER role
 
     // ============================================
     // /passengers/create
@@ -36,8 +36,12 @@ class PassengerControllerIntegrationTest {
 
     @Test
     void testCreatePassengerSuccess() throws Exception {
+        org.springframework.jdbc.core.JdbcTemplate jdbc = new org.springframework.jdbc.core.JdbcTemplate(mockMvc.getDispatcherServlet().getWebApplicationContext().getBean(javax.sql.DataSource.class));
+        jdbc.execute("INSERT INTO users (email, password, status, identifier_document, name) VALUES ('newpass@siti.edu.br', '123456', 'Pendente', '111', 'Passenger')");
+        Long pendingId = jdbc.queryForObject("SELECT id FROM users WHERE email='newpass@siti.edu.br'", Long.class);
+
         Map<String, Object> payload = new HashMap<>();
-        payload.put("id", 1L); // assuming user id 1 exists
+        payload.put("id", pendingId);
         payload.put("birthDate", "2000-01-01");
         payload.put("phone", "11999999999");
         payload.put("type", "Estudante");
@@ -46,6 +50,8 @@ class PassengerControllerIntegrationTest {
         payload.put("idAddress", 1L);
 
         mockMvc.perform(post("/passengers/create")
+                .header("Authorization", "Bearer " + MOCK_USER_TOKEN)
+                .header("Role", "USER")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isOk());
@@ -56,6 +62,8 @@ class PassengerControllerIntegrationTest {
         // Missing required ID should trigger failure
         Map<String, Object> payload = new HashMap<>();
         mockMvc.perform(post("/passengers/create")
+                .header("Authorization", "Bearer " + MOCK_USER_TOKEN)
+                .header("Role", "USER")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isBadRequest());

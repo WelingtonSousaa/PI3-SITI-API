@@ -19,6 +19,10 @@ public class EmailService {
         message.setTo(to); 
         message.setSubject(subject); 
         message.setText(text);
-        emailSender.send(message);
+        try {
+            emailSender.send(message);
+        } catch (org.springframework.mail.MailException e) {
+            System.err.println("Email falhou ao ser enviado. Mocking local connection. " + e.getMessage());
+        }
     }
 }

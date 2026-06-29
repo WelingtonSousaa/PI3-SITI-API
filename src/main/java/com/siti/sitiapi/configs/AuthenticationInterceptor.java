@@ -32,7 +32,9 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
                 boolean validRole = authService.validateRole(tokenPuro, role, userActivate);
 
                 if (!validRole) {
-                    deny(response, "Access denied: invalid role.");
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.setStatus(org.springframework.http.HttpStatus.FORBIDDEN.value());
+                    response.getWriter().write("{\"error\": \"Access denied: invalid role.\"}");
                     return false;
                 }
 

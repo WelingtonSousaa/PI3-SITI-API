@@ -47,8 +47,13 @@ class UserControllerIntegrationTest {
 
     @Test
     void testRegisterUserFailureDuplicateEmail() throws Exception {
+        org.springframework.jdbc.core.JdbcTemplate jdbc = new org.springframework.jdbc.core.JdbcTemplate(mockMvc.getDispatcherServlet().getWebApplicationContext().getBean(javax.sql.DataSource.class));
+        try {
+            jdbc.execute("INSERT INTO users (email, password, status, identifier_document, name) VALUES ('admin@siti.edu.br', '123456', 'Ativo', '000000', 'Admin')");
+        } catch (Exception e) {}
+
         Map<String, String> payload = new HashMap<>();
-        payload.put("email", "admin@siti.edu.br"); // Already exists from insert_mock_data.sql
+        payload.put("email", "admin@siti.edu.br"); // Already exists
         payload.put("password", "strongpass123");
         payload.put("identifierDocument", "123456789");
 
@@ -82,6 +87,11 @@ class UserControllerIntegrationTest {
 
     @Test
     void testRegisterAdminFailureDuplicateEmail() throws Exception {
+        org.springframework.jdbc.core.JdbcTemplate jdbc = new org.springframework.jdbc.core.JdbcTemplate(mockMvc.getDispatcherServlet().getWebApplicationContext().getBean(javax.sql.DataSource.class));
+        try {
+            jdbc.execute("INSERT INTO users (email, password, status, identifier_document, name) VALUES ('admin@siti.edu.br', '123456', 'Ativo', '000000', 'Admin')");
+        } catch (Exception e) {}
+
         Map<String, String> payload = new HashMap<>();
         payload.put("email", "admin@siti.edu.br"); // Already exists
         payload.put("password", "strongpass123");

@@ -28,7 +28,9 @@ class DriverControllerIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private final String MOCK_DRIVER_TOKEN = "mock-jwt-token-admin@siti.edu.br"; // admin email exists in insert_mock_data.sql
+    private final String MOCK_ADMIN_TOKEN = "mock-jwt-token-admin@siti.edu.br"; 
+    private final String MOCK_DRIVER_TOKEN = "mock-jwt-token-carlos@siti.com"; // carlos corresponds to DRIVE role
+    private final String MOCK_USER_TOKEN = "mock-jwt-token-mariana@siti.com"; // mariana corresponds to USER role
 
     // ============================================
     // /drivers
@@ -36,8 +38,12 @@ class DriverControllerIntegrationTest {
 
     @Test
     void testCreateDriverSuccess() throws Exception {
+        org.springframework.jdbc.core.JdbcTemplate jdbc = new org.springframework.jdbc.core.JdbcTemplate(mockMvc.getDispatcherServlet().getWebApplicationContext().getBean(javax.sql.DataSource.class));
+        jdbc.execute("INSERT INTO users (email, password, status, identifier_document, name) VALUES ('newdriver@siti.edu.br', '123456', 'Pendente', '111', 'Driver')");
+        Long pendingId = jdbc.queryForObject("SELECT id FROM users WHERE email='newdriver@siti.edu.br'", Long.class);
+
         Map<String, Object> payload = new HashMap<>();
-        payload.put("id", 1L); // user id 1 exists
+        payload.put("id", pendingId);
         payload.put("cnhNumber", "987654321");
         payload.put("cnhCategory", "D");
         payload.put("name", "Motorista Silva");
@@ -47,7 +53,7 @@ class DriverControllerIntegrationTest {
         payload.put("idAddress", 1L);
 
         mockMvc.perform(post("/drivers")
-                .header("Authorization", "Bearer " + MOCK_DRIVER_TOKEN)
+                .header("Authorization", "Bearer " + MOCK_ADMIN_TOKEN)
                 .header("Role", "ADMIN") // ONLY Admin can create drivers
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
@@ -80,7 +86,7 @@ class DriverControllerIntegrationTest {
     @Test
     void testGetRoutesForbidden() throws Exception {
         mockMvc.perform(get("/driver/routes")
-                .header("Authorization", "Bearer " + MOCK_DRIVER_TOKEN)
+                .header("Authorization", "Bearer " + MOCK_USER_TOKEN)
                 .header("Role", "USER"))
                 .andExpect(status().isForbidden());
     }
@@ -100,7 +106,7 @@ class DriverControllerIntegrationTest {
     @Test
     void testGetProfileForbidden() throws Exception {
         mockMvc.perform(get("/driver/profile")
-                .header("Authorization", "Bearer " + MOCK_DRIVER_TOKEN)
+                .header("Authorization", "Bearer " + MOCK_USER_TOKEN)
                 .header("Role", "USER"))
                 .andExpect(status().isForbidden());
     }
@@ -120,7 +126,7 @@ class DriverControllerIntegrationTest {
     @Test
     void testGetVehicleForbidden() throws Exception {
         mockMvc.perform(get("/driver/vehicle")
-                .header("Authorization", "Bearer " + MOCK_DRIVER_TOKEN)
+                .header("Authorization", "Bearer " + MOCK_USER_TOKEN)
                 .header("Role", "USER"))
                 .andExpect(status().isForbidden());
     }
@@ -146,7 +152,7 @@ class DriverControllerIntegrationTest {
     void testUpdateTripStatusForbidden() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         mockMvc.perform(put("/driver/routes/1/status")
-                .header("Authorization", "Bearer " + MOCK_DRIVER_TOKEN)
+                .header("Authorization", "Bearer " + MOCK_USER_TOKEN)
                 .header("Role", "USER")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
@@ -168,7 +174,7 @@ class DriverControllerIntegrationTest {
     @Test
     void testGetPassengersForbidden() throws Exception {
         mockMvc.perform(get("/driver/routes/1/passengers")
-                .header("Authorization", "Bearer " + MOCK_DRIVER_TOKEN)
+                .header("Authorization", "Bearer " + MOCK_USER_TOKEN)
                 .header("Role", "USER"))
                 .andExpect(status().isForbidden());
     }
@@ -194,7 +200,7 @@ class DriverControllerIntegrationTest {
     void testUpdatePassengerStatusForbidden() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         mockMvc.perform(put("/driver/passengers/1/status")
-                .header("Authorization", "Bearer " + MOCK_DRIVER_TOKEN)
+                .header("Authorization", "Bearer " + MOCK_USER_TOKEN)
                 .header("Role", "USER")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
@@ -213,7 +219,7 @@ class DriverControllerIntegrationTest {
         payload.put("severity", "Alta");
         payload.put("description", "Pneu furado");
 
-        mockMvc.perform(post("/driver/failures") // Endpoint inside controller is /driver/failures instead of /drivers/failures
+        mockMvc.perform(post("/driver/failures") 
                 .header("Authorization", "Bearer " + MOCK_DRIVER_TOKEN)
                 .header("Role", "DRIVE")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -225,7 +231,7 @@ class DriverControllerIntegrationTest {
     void testReportFailureForbidden() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         mockMvc.perform(post("/driver/failures")
-                .header("Authorization", "Bearer " + MOCK_DRIVER_TOKEN)
+                .header("Authorization", "Bearer " + MOCK_USER_TOKEN)
                 .header("Role", "USER")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))

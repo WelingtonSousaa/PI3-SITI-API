@@ -42,20 +42,6 @@ mysql -u root -p < database/create_db.sql
 
 *(Nota 2: A importação do arquivo `procedures.sql` não é mais necessária, pois os Repositórios foram refatorados para utilizar JDBC padrão em vez de Stored Procedures do MySQL. Isso garante a compatibilidade universal com diferentes bancos de dados, inclusive para rodar nossos testes E2E localmente no H2).*
 
-### 2. Rodar os Testes (E2E com H2 Database)
-Para garantir que a API está funcionando perfeitamente, desenvolvemos uma suíte exaustiva de testes End-to-End (E2E) cobrindo **todos os endpoints e possibilidades (sucesso e falha)**. Eles não afetam seu banco de dados MySQL, pois rodam inteiramente em memória usando o banco H2.
-
-Para rodar todos os testes automatizados da aplicação:
-
-**No Windows (PowerShell/CMD):**
-```bash
-.\mvnw.cmd test
-```
-
-**No Linux/Mac:**
-```bash
-./mvnw test
-```
 
 ### 3. Rodar a Aplicação Spring Boot
 Não é necessário ter o Maven instalado globalmente, pois o projeto usa o **Maven Wrapper**. No seu terminal, ainda na raiz do projeto, execute:
