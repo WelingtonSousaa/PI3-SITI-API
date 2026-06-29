@@ -1,69 +1,65 @@
 package com.siti.sitiapi.service;
 
-import com.siti.sitiapi.dto.PassengerCreateRequest;
-import com.siti.sitiapi.exception.BusinessException;
 import com.siti.sitiapi.model.User;
-import com.siti.sitiapi.repository.PassengerRepository;
 import com.siti.sitiapi.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
-public class PassengerServiceTest {
-
-    @Mock
-    private PassengerRepository passengerRepository;
+class PassengerServiceTest {
 
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private JdbcTemplate jdbc;
+
     @InjectMocks
     private PassengerService passengerService;
 
-    @Test
-    void shouldThrowExceptionWhenUserNotFound() {
-        System.out.println("[TEST] Executing shouldThrowExceptionWhenUserNotFound for PassengerService...");
-        PassengerCreateRequest request = new PassengerCreateRequest();
-        request.setIdUser(1L);
-
-        when(userRepository.findById(1L)).thenReturn(null);
-
-        BusinessException exception = assertThrows(BusinessException.class, () -> {
-            passengerService.create(request);
-        });
-
-        System.out.println("       -> Validation caught! Message: " + exception.getError().getMessage());
-        assertEquals("Usuário não encontrado para o ID informado.", exception.getError().getMessage());
-        verify(passengerRepository, never()).create(any(), any(), any(), any(), any(), any(), any());
-        System.out.println("[TEST] Success!");
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void shouldThrowExceptionWhenPassengerAlreadyExists() {
-        System.out.println("[TEST] Executing shouldThrowExceptionWhenPassengerAlreadyExists for PassengerService...");
-        PassengerCreateRequest request = new PassengerCreateRequest();
-        request.setIdUser(1L);
-
+    void testVoteSuccess() {
         User user = new User();
-        user.setId(1L);
+        user.setId(77L);
+        user.setEmail("student@siti.edu.br");
 
-        when(userRepository.findById(1L)).thenReturn(user);
-        when(passengerRepository.existsById(1L)).thenReturn(true);
+        when(userRepository.findByEmail("student@siti.edu.br")).thenReturn(user);
 
-        BusinessException exception = assertThrows(BusinessException.class, () -> {
-            passengerService.create(request);
-        });
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("routeId", 15);
+        payload.put("stop", "Centro");
 
-        System.out.println("       -> Validation caught! Message: " + exception.getError().getMessage());
-        assertEquals("Passageiro já cadastrado para este usuário.", exception.getError().getMessage());
-        verify(passengerRepository, never()).create(any(), any(), any(), any(), any(), any(), any());
-        System.out.println("[TEST] Success!");
+        Map<String, Object> response = passengerService.vote("student@siti.edu.br", payload);
+
+        assertEquals(true, response.get("success"));
+        verify(jdbc, times(1)).update(contains("DELETE FROM votes"), eq(77L));
+        verify(jdbc, times(1)).update(contains("INSERT INTO votes"), eq(77L), eq(15L), eq("Centro"));
+    }
+
+    @Test
+    void testVoteUserNotFound() {
+        when(userRepository.findByEmail("notfound@siti.edu.br")).thenReturn(null);
+
+        Map<String, Object> payload = new HashMap<>();
+        
+        Exception exception = assertThrows(RuntimeException.class, () -> passengerService.vote("notfound@siti.edu.br", payload));
+        assertEquals("Usuário não encontrado.", exception.getMessage());
     }
 }
