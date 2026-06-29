@@ -22,7 +22,7 @@ public class EmailService {
         try {
             emailSender.send(message);
         } catch (org.springframework.mail.MailException e) {
-            System.err.println("Email falhou ao ser enviado. Mocking local connection. " + e.getMessage());
+            System.err.println("Aviso: Falha ao tentar enviar e-mail. " + e.getMessage());
         }
     }
 }

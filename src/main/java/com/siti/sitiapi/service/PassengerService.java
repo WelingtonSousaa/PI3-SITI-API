@@ -127,7 +127,7 @@ public class PassengerService {
             passenger = passengerRepository.findById(user.getId());
         }
 
-        String name = user.getName() != null ? user.getName() : AuthService.formatNameFromEmail(email);
+        String name = user.getName() != null ? user.getName() : email.split("@")[0];
         String reg = passenger.getRegistrationNumber() != null ? passenger.getRegistrationNumber() : "20260042";
         String inst = passenger.getType() != null ? passenger.getType() : "Campus Universitário";
         String photo = passenger.getPhotoUrl() != null ? passenger.getPhotoUrl() : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150";

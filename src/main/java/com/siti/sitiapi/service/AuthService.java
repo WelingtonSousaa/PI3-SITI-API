@@ -24,64 +24,10 @@ public class AuthService {
     private final PassengerRepository passengerRepository;
     private final JdbcTemplate jdbcTemplate;
     private final EmailService emailService;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
-    public static boolean isMockEmail(String email) {
-        if (email == null) return false;
-        String lower = email.toLowerCase();
-        return lower.contains("admin") || lower.contains("suporte") ||
-               lower.contains("driver") || lower.contains("carlos") ||
-               lower.contains("jose") || lower.contains("mariana") ||
-               lower.contains("felipe") || lower.contains("joao") ||
-               lower.contains("joão") || lower.contains("roberto");
-    }
-
-    public void autoProvisionIfNeeded(String email, String password) {
-        if (email == null) return;
-        if (!isMockEmail(email)) return;
-        User user = userRepository.findByEmail(email);
-        if (user != null) {
-            // Se o usuário existe no banco de dados, garante que ele possui um registro de papel (role) associado
-            Long id = user.getId();
-            boolean isAdm = authRepository.hasAdministratorById(id);
-            boolean isDriver = authRepository.hasDriverById(id);
-            boolean isPassenger = passengerRepository.existsById(id);
-            if (!isAdm && !isDriver && !isPassenger) {
-                String role = determineRoleFromEmail(email);
-                provisionRoleRecord(id, role, user.getName() != null ? user.getName() : formatNameFromEmail(email));
-            }
-            return;
-        }
-
-        // Não existe, vamos provisionar para fins de desenvolvimento/teste mock
-        String role = determineRoleFromEmail(email);
-        String name = formatNameFromEmail(email);
-
-        userRepository.create(email, password != null ? password : "123456", "123.456.789-00", name);
-
-        User newUser = userRepository.findByEmail(email);
-        if (newUser == null) return;
-
-        // Atualiza o status para 'Ativo' para que ele passe no interceptor e autenticação
-        jdbcTemplate.update("UPDATE users SET status = 'Ativo' WHERE id = ?", newUser.getId());
-
-        // Cria o registro específico de papel associado no banco de dados
-        provisionRoleRecord(newUser.getId(), role, name);
-    }
-
-    private void provisionRoleRecord(Long userId, String role, String name) {
-        if ("ADMIN".equals(role)) {
-            jdbcTemplate.update("INSERT INTO administrators (id, name, city, state) VALUES (?, ?, NULL, NULL)", userId, name);
-        } else if ("DRIVE".equals(role)) {
-            jdbcTemplate.update("INSERT INTO drivers (id, name, phone, birth_date, cnh_number, cnh_category, cnh_validity_date, id_address) VALUES (?, ?, ?, ?, ?, ?, ?, NULL)",
-                    userId, name, "(88) 98888-7777", java.sql.Date.valueOf("1985-06-23"), "12345678901", "D", java.sql.Date.valueOf("2031-12-31"));
-        } else {
-            jdbcTemplate.update("INSERT INTO passengers (id, birth_date, phone, type, registration_number, bond_proof, id_address) VALUES (?, ?, ?, ?, ?, ?, NULL)",
-                    userId, java.sql.Date.valueOf("1998-05-15"), "(88) 99999-9999", "Estudante", "20260042", "comprovante_matricula_2026.pdf");
-        }
-    }
 
     public Map<String, Object> getUserProfileByEmail(String email) {
-        autoProvisionIfNeeded(email, "123456");
         User user = userRepository.findByEmail(email);
         if (user == null) {
             throw new RuntimeException("Usuário não encontrado.");
@@ -105,7 +51,7 @@ public class AuthService {
         }
 
         if (name == null) {
-            name = formatNameFromEmail(email);
+            name = email.split("@")[0];
         }
 
         return Map.of(
@@ -116,53 +62,40 @@ public class AuthService {
         );
     }
 
-    public static String determineRoleFromEmail(String email) {
-        if (email == null) return "USER";
-        String lower = email.toLowerCase();
-        if (lower.contains("admin") || lower.contains("suporte")) {
-            return "ADMIN";
-        }
-        if (lower.contains("driver") || lower.contains("carlos") || lower.contains("jose")) {
-            return "DRIVE";
-        }
-        return "USER";
-    }
-
-    public static String formatNameFromEmail(String email) {
-        if (email == null) return "Usuário SITI";
-        if (email.contains("mariana")) return "Mariana Costa de Melo";
-        if (email.contains("carlos")) return "Carlos Motorista";
-        if (email.contains("jose")) return "José Motorista";
-        if (email.contains("roberto")) return "Roberto Motorista";
-        if (email.contains("felipe")) return "Felipe Estudante";
-        if (email.contains("joao") || email.contains("joão")) return "João Pedro Souza";
-        if (email.contains("admin") || email.contains("suporte")) return "Administrador SITI";
-        
-        String prefix = email.split("@")[0];
-        String[] parts = prefix.split("[._-]");
-        StringBuilder sb = new StringBuilder();
-        for (String part : parts) {
-            if (!part.isEmpty()) {
-                sb.append(Character.toUpperCase(part.charAt(0)))
-                  .append(part.substring(1).toLowerCase())
-                  .append(" ");
-            }
-        }
-        return sb.toString().trim();
-    }
-
     public Map<String, Object> login(String email, String password) {
-        autoProvisionIfNeeded(email, password);
-
         Cache cacheSession       = cacheManager.getCache("session");
         Cache cacheUsersActivate = cacheManager.getCache("usersActivate");
         Cache cacheAdminActivate = cacheManager.getCache("usersAdministratorActivate");
         Cache cacheDriverActivate = cacheManager.getCache("usersDriverActivate");
+        Cache loginAttempts      = cacheManager.getCache("loginAttempts");
 
-        User user = authRepository.getUserByEmailAndPassword(email, password);
+        org.springframework.web.context.request.ServletRequestAttributes attrs = 
+            (org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        String ipAddress = attrs != null ? attrs.getRequest().getRemoteAddr() : "unknown";
 
-        if (user == null || user.getId() == null) {
+        if (loginAttempts != null) {
+            Integer attempts = loginAttempts.get(ipAddress, Integer.class);
+            if (attempts != null && attempts >= 3) {
+                throw new RuntimeException("Conta temporariamente bloqueada após 3 tentativas inválidas. Tente novamente mais tarde.");
+            }
+        }
+
+        User user = authRepository.getUserByEmail(email);
+
+        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
+            if (loginAttempts != null) {
+                Integer attempts = loginAttempts.get(ipAddress, Integer.class);
+                loginAttempts.put(ipAddress, (attempts == null ? 0 : attempts) + 1);
+            }
             throw new RuntimeException("Usuário ou senha incorretos.");
+        }
+
+        if (loginAttempts != null) {
+            loginAttempts.evict(ipAddress);
+        }
+
+        if ("Inativo".equalsIgnoreCase(user.getStatus()) || "Pendente".equalsIgnoreCase(user.getStatus())) {
+            throw new RuntimeException("Sua conta está inativa. Entre em contato com a administração.");
         }
 
         Long userId = ((Number) user.getId()).longValue();
@@ -218,7 +151,7 @@ public class AuthService {
             }
         }
         if (name == null) {
-            name = formatNameFromEmail(email);
+            name = email.split("@")[0];
         }
 
         Map<String, Object> userProfile = Map.of(
@@ -237,11 +170,6 @@ public class AuthService {
     }
 
     public String getEmailByAccessKey(String accessKey) {
-        if (accessKey != null && accessKey.startsWith("mock-jwt-token-")) {
-            String email = accessKey.substring("mock-jwt-token-".length());
-            autoProvisionIfNeeded(email, "123456");
-            return email;
-        }
         Cache cache = cacheManager.getCache("session");
         if (cache != null) {
             Cache.ValueWrapper wrapper = cache.get(accessKey);
@@ -253,19 +181,6 @@ public class AuthService {
     }
 
     public boolean validateRole(String accessKey, String role, String email) {
-        if (accessKey != null && accessKey.startsWith("mock-jwt-token-")) {
-            autoProvisionIfNeeded(email, "123456");
-            User user = userRepository.findByEmail(email);
-            if (user == null) return false;
-            String actualRole = "USER";
-            if (authRepository.hasAdministratorById(user.getId())) {
-                actualRole = "ADMIN";
-            } else if (authRepository.hasDriverById(user.getId())) {
-                actualRole = "DRIVE";
-            }
-            return actualRole.equals(role);
-        }
-
         if ("ADMIN".equals(role)) {
             Cache cacheAdmin = cacheManager.getCache("usersAdministratorActivate");
             if (cacheAdmin == null) return false;
@@ -331,7 +246,8 @@ public class AuthService {
             throw new RuntimeException("Usuário não encontrado.");
         }
         
-        jdbcTemplate.update("UPDATE users SET password = ? WHERE id = ?", newPassword, user.getId());
+        String hash = passwordEncoder.encode(newPassword);
+        jdbcTemplate.update("UPDATE users SET password = ? WHERE id = ?", hash, user.getId());
         
         cache.evict(token);
     }

@@ -24,7 +24,7 @@ public class UserService {
             );
         }
 
-        String name = com.siti.sitiapi.service.AuthService.formatNameFromEmail(request.getEmail());
+        String name = request.getEmail().split("@")[0];
 
         repository.create(
                 request.getEmail(),

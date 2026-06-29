@@ -15,13 +15,15 @@ public class AuthRepository implements BaseRepository{
 
     private final JdbcTemplate jdbcTemplate;
 
-    public User getUserByEmailAndPassword(String email, String password) {
-        List<User> result = jdbcTemplate.query("SELECT id, email FROM users WHERE email = ? AND password = ?", (rs, row) -> {
+    public User getUserByEmail(String email) {
+        List<User> result = jdbcTemplate.query("SELECT id, email, password, status FROM users WHERE email = ?", (rs, row) -> {
             User u = new User();
             u.setId(rs.getLong("id"));
             u.setEmail(rs.getString("email"));
+            u.setPassword(rs.getString("password"));
+            u.setStatus(rs.getString("status"));
             return u;
-        }, email, password);
+        }, email);
         return result.isEmpty() ? null : result.getFirst();
     }
 

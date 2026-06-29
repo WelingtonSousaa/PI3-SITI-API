@@ -14,6 +14,7 @@ import java.util.Map;
 public class UserRepository implements BaseRepository{
 
     private final JdbcTemplate jdbc;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     public void create(
             String email,
@@ -21,8 +22,9 @@ public class UserRepository implements BaseRepository{
             String identifierDocument,
             String name
     ) {
+        String hash = passwordEncoder.encode(password);
         jdbc.update("INSERT INTO users (email, password, status, identifier_document, name) VALUES (?, ?, 'Pendente', ?, ?)",
-                email, password, identifierDocument, name);
+                email, hash, identifierDocument, name);
     }
 
     public void createAdmin(
@@ -33,8 +35,9 @@ public class UserRepository implements BaseRepository{
             String city,
             String state
     ) {
+        String hash = passwordEncoder.encode(password);
         jdbc.update("INSERT INTO users (email, password, status, identifier_document, name) VALUES (?, ?, 'Ativo', ?, ?)",
-                email, password, cnpj, companyName);
+                email, hash, cnpj, companyName);
         
         Long userId = jdbc.queryForObject("SELECT id FROM users WHERE email = ?", Long.class, email);
         
