@@ -2,216 +2,120 @@
 
 API REST do projeto SITI (Sistema Inteligente de Transporte Intercampi), desenvolvida com Java 21, Spring Boot 3.5 e MySQL. A aplicação centraliza funcionalidades de cadastro, autenticação e gerenciamento de frotas e itinerários, fornecendo suporte para os aplicativos do Passageiro, do Motorista e do Painel Administrativo.
 
----
-
-## 🔒 Regras Gerais e Cabeçalhos de Segurança
-
-A API protege a maioria de seus endpoints exigindo os seguintes cabeçalhos nas requisições REST:
-
-1. **`Authorization`**: Token JWT/Access Key de autenticação (Ex: `Bearer eyJhbGciOi...` ou tokens mock de desenvolvimento no formato `Bearer mock-jwt-token-<email>`).
-2. **`Role`**: Papel do usuário logado (`ADMIN`, `DRIVE`, `USER`).
-
-**Configuração de CORS**:
-* **Origem permitida**: `http://localhost:5173`
-* **Métodos**: `GET, POST, PUT, DELETE, OPTIONS`
-* **Cabeçalhos permitidos**: `Content-Type, Authorization, Role`
+Nesta versão mais recente, a API conta com **Inteligência de Roteirização**, disparo automático de e-mails, gerenciamento de filas de espera e uma robusta interface interativa via **Swagger UI**.
 
 ---
 
-## 🔑 Resolução de Roles e Auto-Provisionamento
+## 🛠️ Tecnologias Utilizadas
 
-* **Resolução de Roles Baseada em Banco**: O papel (Role) do usuário logado é determinado exclusivamente pela presença do seu ID nas tabelas correspondentes:
-  * Se ID está em `administrators` -> papel `ADMIN`.
-  * Se ID está em `drivers` -> papel `DRIVE`.
-  * Se ID está em `passengers` -> papel `USER`.
-* **Auto-Provisionamento de Testes**: Em ambiente de desenvolvimento, quando um token mockado (ex: `mock-jwt-token-carlos@siti.com`) é utilizado e o usuário não existe na base, a API provisiona automaticamente o usuário e seu registro de papel específico (com status `'Ativo'`) diretamente no banco de dados para agilizar os testes.
-
----
-
-## 🛠️ Tecnologias
-
-- Java 21
-- Spring Boot 3.5.13
-- Spring Web
-- Spring JDBC (Template)
-- Spring Cache (Caffeine Cache)
-- MySQL / H2 Database (para testes)
-- Lombok
-- DataFaker (geração de dados nos testes)
+- **Linguagem**: Java 21
+- **Framework Principal**: Spring Boot 3.5.13
+- **Persistência**: Spring JDBC (Template) + MySQL / H2 Database (Testes)
+- **Cache**: Spring Cache (Caffeine Cache)
+- **Agendamento**: Spring Scheduling (Cron Jobs automáticos)
+- **Notificações**: Spring Mail (Envio de e-mails via SMTP)
+- **Documentação**: Springdoc OpenAPI (Swagger UI)
+- **Utilitários**: Lombok, DataFaker
 
 ---
 
-## 📂 Estrutura do Projeto
-
-```text
-SITI-API/
-+-- database/
-|   +-- create_db.sql                   # Estrutura do banco e tabelas (MySQL)
-|   +-- procedures.sql                   # Stored Procedures para otimização
-|   +-- SITI-API.postman_collection.json # Coleção do Postman para testes manuais
-+-- src/main/java/com/siti/sitiapi/
-|   +-- configs/                         # CORS, Cache, interceptador de autenticação
-|   +-- controller/                      # Rotas REST agrupadas por módulo
-|   +-- dto/                             # Data Transfer Objects (DTOs)
-|   +-- exception/                       # Tratamento centralizado de exceções
-|   +-- model/                           # Entidades de domínio
-|   +-- repository/                      # Acesso ao banco via JDBC e Procedures
-|   +-- service/                         # Lógica e regras de negócio
-+-- src/main/resources/
-|   +-- application.yaml                 # Configuração padrão de profiles
-|   +-- application-dev.yaml             # Configuração local (MySQL)
-|   +-- application-prod.yaml            # Configuração de produção
-+-- Dockerfile
-+-- mvnw / mvnw.cmd                      # Maven Wrapper
-+-- pom.xml
-```
-
----
-
-## ⚙️ Configuração e Inicialização Local
+## ⚙️ Passo a Passo de Execução (Como Rodar o Projeto)
 
 ### Pré-requisitos
-* Java 21+ instalado
-* MySQL rodando localmente
+* **Java 21** instalado nas variáveis de ambiente.
+* **MySQL 8.0+** rodando localmente (com a pasta `bin` configurada no PATH do Windows).
 
-### 1. Preparando o Banco de Dados
-Crie a estrutura do banco e instale as stored procedures executando:
+### 1. Criar o Banco de Dados Local
+O sistema depende de tabelas e procedimentos armazenados (*Stored Procedures*) nativos do MySQL.
+Abra seu terminal (PowerShell ou Git Bash) na pasta raiz do projeto e execute a importação dos arquivos SQL que estão na pasta `database/`.
+
+**Se estiver usando PowerShell:**
+```powershell
+Get-Content database\create_db.sql | mysql -u root -p
+```
+
+**Se estiver usando Git Bash ou Linux/Mac:**
 ```bash
 mysql -u root -p < database/create_db.sql
-mysql -u root -p sitidb < database/procedures.sql
 ```
-*Caso seu MySQL possua credenciais personalizadas, ajuste as configurações no arquivo [application-dev.yaml](file:///c:/Users/Romario Melo/IdeaProjects/SITI-API/src/main/resources/application-dev.yaml).*
+*(Nota: O MySQL pedirá sua senha local, basta digitá-la. Se suas credenciais forem diferentes de `root`/`root`, lembre-se de atualizá-las no arquivo `src/main/resources/application-dev.yaml`).*
 
-### 2. Executando a Aplicação
-Inicie a aplicação utilizando o Maven Wrapper:
-```bash
-# Windows
-.\mvnw.cmd spring-boot:run
+*(Nota 2: A importação do arquivo `procedures.sql` não é mais necessária, pois os Repositórios foram refatorados para utilizar JDBC padrão em vez de Stored Procedures do MySQL. Isso garante a compatibilidade universal com diferentes bancos de dados, inclusive para rodar nossos testes E2E localmente no H2).*
 
-# Linux / macOS
-./mvnw spring-boot:run
-```
-A API subirá na porta `8080` (acessível via `http://localhost:8080`).
+### 2. Rodar os Testes (E2E com H2 Database)
+Para garantir que a API está funcionando perfeitamente, desenvolvemos uma suíte exaustiva de testes End-to-End (E2E) cobrindo **todos os endpoints e possibilidades (sucesso e falha)**. Eles não afetam seu banco de dados MySQL, pois rodam inteiramente em memória usando o banco H2.
 
-### 3. Rodando os Testes Automatizados
-Para garantir a integridade dos dados e o correto funcionamento dos módulos, execute a suite de testes:
+Para rodar todos os testes automatizados da aplicação:
+
+**No Windows (PowerShell/CMD):**
 ```bash
 .\mvnw.cmd test
 ```
 
----
+**No Linux/Mac:**
+```bash
+./mvnw test
+```
 
-## 📡 Endpoints da API
+### 3. Rodar a Aplicação Spring Boot
+Não é necessário ter o Maven instalado globalmente, pois o projeto usa o **Maven Wrapper**. No seu terminal, ainda na raiz do projeto, execute:
 
-As rotas de `/auth/login` e `/users/register` são públicas. Todas as outras rotas exigem o envio dos cabeçalhos `Authorization` e `Role`.
+**No Windows (PowerShell/CMD):**
+```bash
+.\mvnw.cmd spring-boot:run
+```
 
-### 🔑 1. Autenticação e Registro
+**No Linux/Mac:**
+```bash
+./mvnw spring-boot:run
+```
+O Maven irá baixar as dependências, compilar o projeto e iniciar a API. Você verá nos logs a mensagem de que o Tomcat foi iniciado na porta `8080`.
 
-#### Registrar Novo Usuário
-* **POST** `/users/register`
-* **Request Body**:
-  ```json
-  {
-    "email": "estudante.siti@crateus.edu.br",
-    "password": "senha",
-    "identifierDocument": "123.456.789-00"
-  }
-  ```
-* **Resposta Esperada (201 Created)**:
-  ```json
-  {
-    "success": true,
-    "message": "Cadastro enviado para homologação!"
-  }
-  ```
+### 4. Acessar o Swagger UI e Testar
+Com a API rodando, você não precisa configurar o Postman. Acesse a interface interativa do Swagger no seu navegador:
 
-#### Login de Usuário
-* **POST** `/auth/login`
-* **Request Body**:
-  ```json
-  {
-    "email": "estudante.siti@crateus.edu.br",
-    "password": "senha"
-  }
-  ```
-* **Resposta Esperada (200 OK)**:
-  ```json
-  {
-    "token": "a1b2c3d4-e5f6...",
-    "role": "USER",
-    "user": {
-      "id": 1,
-      "email": "estudante.siti@crateus.edu.br",
-      "role": "USER",
-      "name": "Estudante SITI"
-    }
-  }
-  ```
+🔗 **[http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)**
+
+Aqui você poderá ver todos os endpoints, entender o que cada um espera e testá-los em tempo real.
+* **Dica de Autenticação**: Para acessar as rotas protegidas pelo Swagger, crie um token simulado (ex: cadastre um usuário no `/auth/login` ou gere um access token) e utilize o botão verde **"Authorize"** no topo da página. Preencha seu *Bearer Token* e informe a *Role* correspondente (`ADMIN`, `USER` ou `DRIVE`).
 
 ---
 
-### 🛡️ 2. Módulo do Administrador (`ADMIN`)
-Endpoints administrativos para homologação de usuários, gerenciamento de frotas, motoristas e avisos.
+## 🧠 Inteligência do Sistema e Lógicas Automáticas
 
-* **GET** `/admin/pending-homologations` - Lista cadastros com status `'Pendente'`.
-* **POST** `/admin/homologate/{id}` - Aprova o cadastro de um usuário (altera o status para `'Ativo'`).
-* **POST** `/admin/reject/{id}` - Reprova e remove o cadastro de um usuário.
-* **GET** `/admin/routes` - Visualiza todas as rotas ativas.
-* **GET** `/admin/vehicles` - Lista ônibus cadastrados com contagem de votos diários de viagem.
-* **POST** `/admin/vehicles` - Cadastra um novo ônibus.
-* **GET** `/admin/drivers` - Lista motoristas operacionais.
-* **POST** `/admin/drivers` - Vincula dados operacionais (CNH/Telefone) a um usuário.
-* **GET** `/admin/settings` - Obtém parâmetros operacionais do sistema (horários de votação).
-* **PUT** `/admin/settings` - Atualiza as configurações operacionais.
-* **POST** `/admin/notices` - Publica um novo aviso/notícia no feed do aplicativo.
-* **GET** `/admin/support-messages` - Visualiza dúvidas e sugestões enviadas por passageiros.
+A API possui um módulo avançado (Schedule) para otimizar as viagens diárias de forma totalmente autônoma:
+* **Fechamento de Votação (RF010)**: Ao dar o horário limite (configurável pelo painel do Admin), o sistema encerra a captação de intenção de viagens para as rotas do dia.
+* **Otimização de Paradas (RF011)**: Paradas sem nenhum aluno que manifestou interesse são sumariamente removidas da rota gerada para o Motorista.
+* **Superlotação e Lista de Espera (RF012 / RF025)**: Se uma rota receber mais intenções de embarque do que a capacidade do ônibus, os alunos excedentes são movidos para uma Fila de Espera, e o Administrador recebe um Alerta Crítico por e-mail.
+* **Lembretes Automáticos (RF024)**: Meia hora antes do encerramento das votações, alunos que ainda não confirmaram a presença recebem um lembrete via e-mail.
 
 ---
 
-### 🎓 3. Módulo do Passageiro (`USER` / `PASSENGER`)
-Funcionalidades dedicadas ao acompanhamento de rotas, envio de sugestões e intenções de viagem.
+## 🔒 Regras de Segurança e Acesso
 
-* **GET** `/passenger/profile` - Dados cadastrais do aluno e status da sua homologação.
-* **GET** `/passenger/routes` - Lista as rotas disponíveis do dia, paradas intermediárias e acessibilidade de cada veículo.
-* **POST** `/passenger/votes` - Registra o voto diário de intenção de viagem e parada de embarque pretendida.
-* **GET** `/passenger/notices` - Acessa o mural de avisos da universidade.
-* **GET** `/passenger/contacts` - Visualiza o contato do motorista escalado para a rota escolhida hoje e informações do setor de transportes.
-* **POST** `/passenger/support` - Envia uma mensagem com dúvidas, críticas ou sugestões.
-* **POST** `/passenger/photo` - Permite atualizar a foto de perfil do estudante (visualização do motorista no embarque).
+A API protege a maioria de seus endpoints exigindo os seguintes cabeçalhos nas requisições REST (configurados automaticamente no Swagger, mas obrigatórios via Front-end):
+
+1. **`Authorization`**: Token de acesso JWT (Ex: `Bearer eyJhbGciOi...`).
+2. **`Role`**: Papel do usuário logado (`ADMIN`, `DRIVE`, `USER`).
+
+* **Auto-Provisionamento (Ambiente Dev)**: Tokens no padrão mock (ex: `mock-jwt-token-carlos@siti.com`) farão com que a API provisione o usuário automaticamente no banco de dados se ele não existir, facilitando testes sem dor de cabeça.
 
 ---
 
-### 🚍 4. Módulo do Motorista (`DRIVE`)
-Controle das viagens, lista de embarques e incidentes operacionais.
+## 🐳 Executando com Docker (Alternativa Isolada)
 
-* **GET** `/driver/profile` - Acessa dados operacionais do motorista (CNH, Validade).
-* **GET** `/driver/routes` - Visualiza as viagens agendadas ou em andamento sob sua escala no dia.
-* **GET** `/driver/vehicle` - Exibe os dados do ônibus escalado para o motorista no dia de hoje.
-* **PUT** `/driver/routes/{id}/status` - Permite iniciar e concluir a viagem alterando o status (ex: `'Em Viagem'`, `'Finalizada'`).
-* **GET** `/driver/routes/{routeId}/passengers` - Obtém a lista de passageiros que confirmaram interesse e embarque naquela rota hoje.
-* **PUT** `/driver/passengers/{passengerId}/status` - Confirma a presença ou ausência do estudante na hora do embarque (`'Confirmado'`, `'Ausente'`, `'Pendente'`).
-* **POST** `/driver/failures` - Registra falhas mecânicas ou de acessibilidade identificadas no ônibus.
+Caso não queira configurar o MySQL ou o Java na sua máquina, você pode subir tudo via Docker.
 
----
-
-## 🐳 Executando com Docker
-
-Você pode subir a aplicação em produção empacotando-a em um container Docker:
-
-1. **Build da Imagem**:
+1. **Faça o Build da Imagem**:
    ```bash
    docker build -t siti-api .
    ```
-2. **Executar Container**:
+2. **Inicie o Container** (substitua com suas credenciais de banco):
    ```bash
-   docker run --rm -p 8080:8080 \
-     -e DB_USER=root \
-     -e DB_PASSWORD=root \
-     siti-api
+   docker run --rm -p 8080:8080 -e DB_USER=root -e DB_PASSWORD=root siti-api
    ```
-*Nota: Em ambiente Docker (`prod`), a aplicação espera encontrar a conexão de banco de dados apontando para a rede mapeada do compose (`db:3306`).*
 
 ---
 
 ## 🔗 Links Úteis
-* **Quadro de Tarefas**: [Quadro de Projetos do GitHub](https://github.com/users/r7melo/projects/12)
+* **Quadro de Tarefas / Documentação**: [GitHub Projects](https://github.com/users/r7melo/projects/12)
